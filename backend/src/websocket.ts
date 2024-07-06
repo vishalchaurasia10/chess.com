@@ -34,6 +34,7 @@ const handleMessage = async (message: Message, ws: WebSocketExtended, wss: WebSo
 
     switch (message.type) {
         case 'init_game':
+            console.log('Init game:', userEmail);
             if (pendingUser) {
                 const chess = new Chess();
                 const newGame = new Game({
@@ -70,6 +71,7 @@ const handleMessage = async (message: Message, ws: WebSocketExtended, wss: WebSo
             break;
 
         case 'move':
+            console.log('Move:', message.payload);
             const { from, to, gameId } = message.payload;
             const gameData = games[gameId];
 
@@ -119,7 +121,7 @@ const handleMessage = async (message: Message, ws: WebSocketExtended, wss: WebSo
             }
             break;
         default:
-            console.log('Unknown message type');
+            console.log('Unknown message type', message.type);
     }
 };
 

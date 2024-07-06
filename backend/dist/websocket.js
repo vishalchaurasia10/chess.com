@@ -89,7 +89,7 @@ const handleMessage = (message, ws, wss) => __awaiter(void 0, void 0, void 0, fu
             }
             break;
         default:
-            console.log('Unknown message type');
+            console.log('Unknown message type', message.type);
     }
 });
 // WebSocket setup function

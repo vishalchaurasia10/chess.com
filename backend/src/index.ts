@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import connectDB from './db/connection';
 import authRoutes from './routes/authRoutes';
 import setupWebSocket from './websocket';
+import cors from 'cors';
 dotenv.config();
 
 const app = express();
@@ -14,6 +15,12 @@ connectDB();
 
 // Middleware
 app.use(express.json());
+
+app.use(cors({
+    origin: process.env.FRONTEND_URL, // Replace with your frontend URL
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // Routes
 app.use('/api/auth', authRoutes);

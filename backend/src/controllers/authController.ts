@@ -19,15 +19,15 @@ export const login = async (req: Request, res: Response) => {
     try {
         const user = await User.findOne({ email });
         if (!user) {
-            return res.status(400).send('Invalid credentials');
+            return res.status(400).send({ error: 'Invalid credentials' });
         }
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            return res.status(400).send('Invalid credentials');
+            return res.status(400).send({ error: 'Invalid credentials' });
         }
         const token = jwt.sign({ id: user._id }, 'secret', { expiresIn: '1h' });
-        res.json({ token });
+        res.status(200).json({ token });
     } catch (error) {
-        res.status(500).send(error);
+        res.status(500).send({ error: 'Server error' });
     }
 };

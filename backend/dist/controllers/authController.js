@@ -40,7 +40,7 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             return res.status(400).send('Invalid credentials');
         }
         const token = jsonwebtoken_1.default.sign({ id: user._id }, 'secret', { expiresIn: '1h' });
-        res.json({ token });
+        res.status(200).json({ token });
     }
     catch (error) {
         res.status(500).send(error);
