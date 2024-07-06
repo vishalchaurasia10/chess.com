@@ -2,18 +2,20 @@ import mongoose from "mongoose";
 
 const gameSchema = new mongoose.Schema({
     player1: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
+        type: String,
         required: true
     },
     player2: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
+        type: String,
         required: true
     },
-    moves: {
-        type: [String],
-        default: []
+    board: {
+        type: String,
+        default: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'
+    },
+    turn: {
+        type: String,
+        required: true
     },
     result: {
         type: String,

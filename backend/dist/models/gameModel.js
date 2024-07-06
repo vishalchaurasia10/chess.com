@@ -6,18 +6,20 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importDefault(require("mongoose"));
 const gameSchema = new mongoose_1.default.Schema({
     player1: {
-        type: mongoose_1.default.Schema.Types.ObjectId,
-        ref: 'User',
+        type: String,
         required: true
     },
     player2: {
-        type: mongoose_1.default.Schema.Types.ObjectId,
-        ref: 'User',
+        type: String,
         required: true
     },
-    moves: {
-        type: [String],
-        default: []
+    board: {
+        type: String,
+        default: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'
+    },
+    turn: {
+        type: String,
+        required: true
     },
     result: {
         type: String,

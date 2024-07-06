@@ -1,9 +1,13 @@
 import WebSocket from 'ws';
 import http from 'http';
 import { Chess } from 'chess.js'; // Import chess.js library
+import Game from './models/gameModel';
+import User from './models/userModel';
 
 interface WebSocketExtended extends WebSocket {
     isAlive: boolean;
+    gameId?: string;
+    userEmail?: string;
 }
 
 // Message Types
@@ -14,23 +18,104 @@ interface Message {
     payload: any;
 }
 
+let pendingUser: WebSocketExtended | null = null;
+const games: {
+    [key: string]: {
+        game: Chess;
+        turn: string;
+        player1: string;
+        player2: string;
+    };
+} = {};
+
 // Function to handle different message types
-const handleMessage = (message: Message, ws: WebSocketExtended, wss: WebSocket.Server, game: Chess) => {
+const handleMessage = async (message: Message, ws: WebSocketExtended, wss: WebSocket.Server) => {
+    const { userEmail } = message.payload;
+
     switch (message.type) {
         case 'init_game':
-            console.log('Initializing game');
-            game.reset(); // Reset the chess game
-            // Optionally, you can set up additional game initialization logic here
-            break;
-        case 'move':
-            const { from, to } = message.payload;
-            const moveResult = game.move({ from, to });
-            if (moveResult) {
-                console.log('Move made:', moveResult);
-                // Handle move validation or additional logic here
+            if (pendingUser) {
+                const chess = new Chess();
+                const newGame = new Game({
+                    player1: pendingUser.userEmail,
+                    player2: userEmail,
+                    turn: pendingUser.userEmail,
+                });
+                const savedGame = await newGame.save();
+
+                const gameId = savedGame._id.toString();
+                games[gameId] = {
+                    game: chess,
+                    turn: pendingUser.userEmail!,
+                    player1: pendingUser.userEmail!,
+                    player2: userEmail,
+                };
+
+                pendingUser.gameId = gameId;
+                ws.gameId = gameId;
+
+                pendingUser.send(
+                    JSON.stringify({ type: 'game_started', gameId, board: chess.fen() })
+                );
+                ws.send(
+                    JSON.stringify({ type: 'game_started', gameId, board: chess.fen() })
+                );
+
+                pendingUser = null;
             } else {
+                pendingUser = ws;
+                ws.userEmail = userEmail;
+                ws.send(JSON.stringify({ type: 'waiting_for_opponent' }));
+            }
+            break;
+
+        case 'move':
+            const { from, to, gameId } = message.payload;
+            const gameData = games[gameId];
+
+            if (!gameData) {
+                console.log('Game not found');
+                return;
+            }
+
+            const game = gameData.game;
+            const currentTurn = gameData.turn;
+
+            if (currentTurn !== userEmail) {
+                console.log('Not your turn');
+                ws.send(JSON.stringify({ type: 'error', message: 'Not your turn' }));
+                return;
+            }
+
+            try {
+                const moveResult = game.move({ from, to });
+                console.log('Move made:', moveResult);
+                const updatedBoard = game.fen();
+                // Update the turn in the game state
+                gameData.turn = game.turn() === 'w' ? gameData.player1 : gameData.player2;
+
+                // Update the board state in the database
+                await Game.updateOne(
+                    { _id: gameId },
+                    { board: updatedBoard, turn: gameData.turn }
+                );
+
+                // Emit updated board state to both players
+                wss.clients.forEach((client) => {
+                    const extendedClient = client as WebSocketExtended;
+                    if (extendedClient.gameId === gameId) {
+                        extendedClient.send(
+                            JSON.stringify({
+                                type: 'board_update',
+                                board: updatedBoard,
+                                turn: gameData.turn,
+                            })
+                        );
+                    }
+                });
+            } catch (error) {
                 console.log('Invalid move:', message.payload);
-                // Handle invalid move
+                ws.send(JSON.stringify({ type: 'error', message: 'Invalid move' }));
             }
             break;
         default:
@@ -41,7 +126,6 @@ const handleMessage = (message: Message, ws: WebSocketExtended, wss: WebSocket.S
 // WebSocket setup function
 const setupWebSocket = (server: http.Server) => {
     const wss = new WebSocket.Server({ server });
-    const game = new Chess(); // Initialize chess.js game instance
 
     wss.on('connection', (ws: WebSocketExtended) => {
         ws.isAlive = true;
@@ -53,7 +137,7 @@ const setupWebSocket = (server: http.Server) => {
         ws.on('message', (data) => {
             try {
                 const message: Message = JSON.parse(data.toString());
-                handleMessage(message, ws, wss, game); // Pass game instance to handleMessage
+                handleMessage(message, ws, wss);
             } catch (error) {
                 console.error('Invalid message format', error);
             }
@@ -64,12 +148,12 @@ const setupWebSocket = (server: http.Server) => {
 
     // Heartbeat to check if connection is alive
     setInterval(() => {
-        wss.clients.forEach((ws: WebSocket) => {
+        wss.clients.forEach((ws) => {
             const wsExtended = ws as WebSocketExtended;
             if (!wsExtended.isAlive) return wsExtended.terminate();
 
             wsExtended.isAlive = false;
-            wsExtended.ping(null, false, (err: Error) => {
+            wsExtended.ping(undefined, false, (err: Error) => {
                 if (err) {
                     console.error('Ping error:', err);
                     wsExtended.terminate();
