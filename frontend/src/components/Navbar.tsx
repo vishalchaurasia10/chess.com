@@ -20,7 +20,7 @@ const NavIcon = ({ type }: { type: String }) => {
 
 const Navbar = () => {
     return (
-        <nav className='fixed top-0 left-0 h-full p-2 px-0 bg-black flex flex-col items-center w-min font-firaCode'>
+        <nav className='fixed z-50 top-0 left-0 h-full p-2 px-0 bg-black flex flex-col items-center w-min font-firaCode'>
             <div className="top h-[10%] py-2 flex items-center justify-start space-x-1">
                 <SiChessdotcom className='text-5xl text-[#acd06f]' />
                 <span className='font-bold text-2xl'>Chess</span>

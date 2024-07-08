@@ -10,6 +10,7 @@ const config: Config = {
     extend: {
       fontFamily: {
         firaCode: ["Fira Code", "monospace"],
+        poppins: ["Poppins", "sans-serif"],
       },
     },
   },
