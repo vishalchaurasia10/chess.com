@@ -25,7 +25,7 @@ const Signin = () => {
         const res = await signin(credentials)
         if (res === 'success') {
             setCredentials({ email: '', password: '' })
-            router.push('/get-started')
+            router.push('/game')
         }
     }
 

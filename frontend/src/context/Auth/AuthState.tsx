@@ -13,47 +13,48 @@ const AuthState: React.FC<AuthStateProps> = ({ children }) => {
     const [user, setUser] = useState<null | User>(null);
     const router = useRouter();
 
-    const signup = async (credentials: Credentials) => {
-        const signupPromise = fetch(`${process.env.API_URL}/api/auth/register`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(credentials)
-        });
+    const signup = async (credentials: { email: string, password: string }) => {
 
-        toast.promise(
-            signupPromise,
-            {
-                loading: 'Signing up...', // Changed pending to loading
-                success: 'Signup successful! 🎉.Now you can login',
-                error: 'Signup failed. Please try again. 🤔'
-            }
-        );
+        toast.loading('Signing up...');
 
         try {
-            const res = await signupPromise;
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(credentials)
+            });
+
             if (res.status === 201) {
+                toast.dismiss();
+                toast.success('Signup successful!🎉. Now you can login');
                 router.push('/sign-in');
+            } else {
+                const errorData = await res.json();
+                toast.dismiss();
+                toast.error(errorData.error || 'Signup failed. Please try again. 🤔')
             }
-            return 'error';
         } catch (error) {
             console.log(error);
+            toast.dismiss();
+            toast.error('Signup failed. Please try again. 🤔');
         }
-    }
+    };
 
     const signin = async (credentials: Credentials) => {
-        const signinPromise = fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(credentials)
-        });
-
+        toast.loading('Signing in...');
+        
         try {
-            const res = await signinPromise;
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(credentials)
+            });
             const data = await res.json();
+            toast.dismiss();
 
             if (res.status !== 200) {
                 toast.error(data.error || 'Signin failed. Please try again. 🤔');
