@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, ReactNode } from "react";
+import React, { useState, ReactNode, useEffect } from "react";
 import { AuthContext, AuthContextType, Credentials, User } from "./authContext";
 import { toast, Toaster } from "react-hot-toast";
 import { useRouter } from "next/navigation";
@@ -51,35 +51,63 @@ const AuthState: React.FC<AuthStateProps> = ({ children }) => {
             body: JSON.stringify(credentials)
         });
 
-        toast.promise(
-            signinPromise,
-            {
-                loading: 'Signing in...',
-                success: 'Signin successful! 🎉',
-                error: 'Signin failed. Please try again. 🤔'
-            }
-        );
-
         try {
             const res = await signinPromise;
             const data = await res.json();
-            if (res.status === 200) {
-                localStorage.setItem('token', data.token);
-                setUser({
-                    email: credentials.email
-                })
-                return 'success';
+
+            if (res.status !== 200) {
+                toast.error(data.error || 'Signin failed. Please try again. 🤔');
+                return 'error';
             }
+
+            toast.success('Signin successful! 🎉');
+            localStorage.setItem('accessToken', data.token);
+            setUser({
+                email: credentials.email
+            });
+            return 'success';
+        } catch (error) {
+            console.log(error);
+            toast.error('Signin failed. Please try again. 🤔');
             return 'error';
+        }
+    }
+
+    const verifyAccessToken = async () => {
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/verifyjwt`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+                }
+            });
+            console.log(response);
+            const data = await response.json();
+            if (response.status === 200) {
+                const email = data.email;
+                setUser({
+                    email
+                });
+            }
         } catch (error) {
             console.log(error);
         }
     }
 
+    const signout = () => {
+        setUser(null);
+        localStorage.removeItem('accessToken');
+        router.push('/sign-in');
+    }
+
+    useEffect(() => {
+        verifyAccessToken();
+    }, []);
+
     return (
         <>
             <Toaster />
-            <AuthContext.Provider value={{ user, setUser, signup, signin } as AuthContextType}>
+            <AuthContext.Provider value={{ user, setUser, signup, signin, signout } as AuthContextType}>
                 {children}
             </AuthContext.Provider>
         </>

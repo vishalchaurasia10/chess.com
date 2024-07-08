@@ -64,7 +64,7 @@ const Signin = () => {
                     id='password'
                 />
             </div>
-            <button className='btn btn-active btn-neutral bg-black text-white w-full lg:w-1/2 rounded-xl'>
+            <button onClick={handleSignin} className='btn btn-active btn-neutral bg-black text-white w-full lg:w-1/2 rounded-xl'>
                 <span>Log in</span>
             </button>
             <div className="alreadyText">

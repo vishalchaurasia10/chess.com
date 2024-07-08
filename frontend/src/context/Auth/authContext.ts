@@ -14,6 +14,7 @@ export interface AuthContextType {
     setUser: React.Dispatch<React.SetStateAction<null | User>>;
     signup: (credentials: Credentials) => Promise<string>;
     signin: (credentials: Credentials) => Promise<String>; // Add signin function
+    signout: () => void;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
