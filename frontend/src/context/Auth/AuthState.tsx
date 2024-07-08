@@ -58,7 +58,7 @@ const AuthState: React.FC<AuthStateProps> = ({ children }) => {
 
             if (res.status !== 200) {
                 toast.error(data.error || 'Signin failed. Please try again. 🤔');
-                return 'error';
+                return;
             }
 
             toast.success('Signin successful! 🎉');
@@ -66,11 +66,9 @@ const AuthState: React.FC<AuthStateProps> = ({ children }) => {
             setUser({
                 email: credentials.email
             });
-            return 'success';
         } catch (error) {
             console.log(error);
             toast.error('Signin failed. Please try again. 🤔');
-            return 'error';
         }
     }
 

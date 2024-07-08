@@ -13,7 +13,7 @@ export interface AuthContextType {
     user: null | User; // Adjust the type as needed
     setUser: React.Dispatch<React.SetStateAction<null | User>>;
     signup: (credentials: Credentials) => void;
-    signin: (credentials: Credentials) => Promise<String>; // Add signin function
+    signin: (credentials: Credentials) => void; // Add signin function
     signout: () => void;
 }
 

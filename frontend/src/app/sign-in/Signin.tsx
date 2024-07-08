@@ -22,11 +22,7 @@ const Signin = () => {
     }
 
     const handleSignin = async () => {
-        const res = await signin(credentials)
-        if (res === 'success') {
-            setCredentials({ email: '', password: '' })
-            router.push('/game')
-        }
+        signin(credentials)
     }
 
     useEffect(() => {
