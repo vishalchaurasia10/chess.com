@@ -15,7 +15,7 @@ const config: Config = {
     },
   },
   daisyui: {
-    themes: ["dracula"],
+    themes: ["nord"],
   },
   plugins: [
     require('daisyui'),
