@@ -56,10 +56,10 @@ const handleMessage = async (message: Message, ws: WebSocketExtended, wss: WebSo
                 ws.gameId = gameId;
 
                 pendingUser.send(
-                    JSON.stringify({ type: 'game_started', gameId, board: chess.fen() })
+                    JSON.stringify({ type: 'game_started', gameId, board: chess.fen(), turn: pendingUser.userEmail })
                 );
                 ws.send(
-                    JSON.stringify({ type: 'game_started', gameId, board: chess.fen() })
+                    JSON.stringify({ type: 'game_started', gameId, board: chess.fen(), turn: pendingUser.userEmail })
                 );
 
                 pendingUser = null;
@@ -91,7 +91,7 @@ const handleMessage = async (message: Message, ws: WebSocketExtended, wss: WebSo
 
             try {
                 const moveResult = game.move({ from, to });
-                console.log('Move made:', moveResult);
+                console.log('Move made by:', userEmail);
                 const updatedBoard = game.fen();
                 // Update the turn in the game state
                 gameData.turn = game.turn() === 'w' ? gameData.player1 : gameData.player2;
