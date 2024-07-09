@@ -22,7 +22,7 @@ const SideBar = () => {
             {
                 user ?
                     <>
-                        <SideBarIcon icon={<BsFillPersonFill size="22" />} text={`${user.email} 🧑‍🦱`} toUrl='/profile' />
+                        <SideBarIcon icon={<BsFillPersonFill size="22" />} text={`${user.name} 🧑‍🦱 with ${user.email}`} toUrl='/profile' />
                         <div onClick={signout}>
                             <SideBarIcon icon={<BsBoxArrowRight size="22" />} text='Sign Out ⚙️' toUrl='/settings' />
                         </div>
