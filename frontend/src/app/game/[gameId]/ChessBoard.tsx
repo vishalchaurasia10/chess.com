@@ -23,6 +23,16 @@ const ChessBoard: React.FC = () => {
         throw new Error('GameContext is not defined');
     }
     const { game, onSquareClick, optionSquares, rightClickedSquares } = gameContext;
+    if (!socketContext) {
+        throw new Error('SocketContext is not defined');
+    }
+    const { socket } = socketContext;
+
+    const disconnectSocket = () => {
+        if (socket) {
+            socket.close();
+        }
+    };
 
     useEffect(() => {
         if (!user) {
@@ -37,6 +47,7 @@ const ChessBoard: React.FC = () => {
     return (
         <div className='w-[90%] lg:w-[48%] shadow-2xl shadow-black'>
             <Toaster />
+            <button onClick={disconnectSocket}>Disconnect Socket</button>
             <Chessboard
                 position={game.fen()}
                 arePiecesDraggable={false}

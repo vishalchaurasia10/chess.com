@@ -8,7 +8,7 @@ import { AuthContext } from "../Auth/authContext";
 import { SocketContext } from "../Socket/socketContext";
 import { Chess, Move, Square } from "chess.js";
 import { toast, Toaster } from "react-hot-toast";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 interface GameStateProps {
     children: ReactNode;
@@ -27,6 +27,7 @@ const GameState: React.FC<GameStateProps> = ({ children }) => {
     const authContext = useContext(AuthContext);
     const socketContext = useContext(SocketContext);
     const router = useRouter();
+    const pathname = usePathname();
     if (!authContext) {
         throw new Error('AuthContext is not defined');
     }
@@ -35,7 +36,7 @@ const GameState: React.FC<GameStateProps> = ({ children }) => {
     if (!socketContext) {
         throw new Error('SocketContext is not defined');
     }
-    const { socket } = socketContext;
+    const { socket, setSocket } = socketContext;
 
     const makeMove = (sourceSquare: string, targetSquare: string) => {
         if (turn !== user?.email) {
@@ -160,19 +161,33 @@ const GameState: React.FC<GameStateProps> = ({ children }) => {
         }
     }
 
+    // function reconnect(newSocket: WebSocket) {
+    //     if (newSocket) {
+    //         newSocket.send(
+    //             JSON.stringify({
+    //                 type: 'reconnect',
+    //                 payload: {
+    //                     gameId,
+    //                     userEmail: user?.email,
+    //                 },
+    //             })
+    //         );
+    //     }
+    // }
+
     useEffect(() => {
         if (!socket) {
             return;
         }
 
-        socket.onmessage = (message) => {
+        const handleSocketMessage = (message: { data: string; }) => {
             const parsedData = JSON.parse(message.data);
             console.log('In gamestate', parsedData);
             const { type } = parsedData;
             if (type === 'waiting_for_opponent') {
                 toast.loading('Waiting for opponent to join');
                 console.log('Waiting for opponent to join');
-            } if (type === 'game_started') {
+            } else if (type === 'game_started') {
                 toast.dismiss();
                 setTurn(parsedData.turn);
                 setGameId(parsedData.gameId);
@@ -186,13 +201,39 @@ const GameState: React.FC<GameStateProps> = ({ children }) => {
             }
         };
 
-        socket.onclose = () => {
+        const handleSocketClose = () => {
+            setSocket(null);
             console.log('Disconnected from WebSocket server');
+            setTimeout(() => {
+                const newSocket = new WebSocket('ws://localhost:5000');
+                setSocket(newSocket);
+                newSocket.onopen = () => {
+                    newSocket.send(
+                        JSON.stringify({
+                            type: 'reconnect',
+                            payload: {
+                                gameId,
+                                userEmail: user?.email,
+                            },
+                        })
+                    );
+                }
+            }, 1000);
         };
 
+        socket.addEventListener('message', handleSocketMessage);
+        socket.addEventListener('close', handleSocketClose);
+
         return () => {
+            socket.removeEventListener('message', handleSocketMessage);
+            socket.removeEventListener('close', handleSocketClose);
             socket.close();
         };
+    }, [socket, gameId]);
+
+    useEffect(() => {
+        const gameId = pathname.split('/').pop() || '';
+        setGameId(gameId);
     }, [socket]);
 
     return (

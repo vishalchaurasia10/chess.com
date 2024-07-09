@@ -3,6 +3,7 @@ import http from 'http';
 import dotenv from 'dotenv';
 import connectDB from './db/connection';
 import authRoutes from './routes/authRoutes';
+import gameRoutes from './routes/gameRoutes';
 import setupWebSocket from './websocket';
 import cors from 'cors';
 dotenv.config();
@@ -24,6 +25,7 @@ app.use(cors({
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/game', gameRoutes);
 
 // WebSocket setup
 setupWebSocket(server);

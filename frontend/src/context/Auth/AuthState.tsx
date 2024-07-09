@@ -81,7 +81,6 @@ const AuthState: React.FC<AuthStateProps> = ({ children }) => {
                     'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
                 }
             });
-            console.log(response);
             const data = await response.json();
             if (response.status === 200) {
                 const email = data.email;

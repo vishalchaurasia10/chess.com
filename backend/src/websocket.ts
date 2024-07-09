@@ -11,7 +11,7 @@ interface WebSocketExtended extends WebSocket {
 }
 
 // Message Types
-type MessageType = 'init_game' | 'move';
+type MessageType = 'init_game' | 'move' | 'reconnect';
 
 interface Message {
     type: MessageType;
@@ -31,6 +31,7 @@ const games: {
 // Function to handle different message types
 const handleMessage = async (message: Message, ws: WebSocketExtended, wss: WebSocket.Server) => {
     const { userEmail } = message.payload;
+    console.log('total clients', wss.clients.size);
 
     switch (message.type) {
         case 'init_game':
@@ -71,8 +72,8 @@ const handleMessage = async (message: Message, ws: WebSocketExtended, wss: WebSo
             break;
 
         case 'move':
-            console.log('Move:', message.payload);
             const { from, to, gameId } = message.payload;
+            console.log('gameid:', gameId)
             const gameData = games[gameId];
 
             if (!gameData) {
@@ -84,14 +85,12 @@ const handleMessage = async (message: Message, ws: WebSocketExtended, wss: WebSo
             const currentTurn = gameData.turn;
 
             if (currentTurn !== userEmail) {
-                console.log('Not your turn');
                 ws.send(JSON.stringify({ type: 'error', message: 'Not your turn' }));
                 return;
             }
 
             try {
                 const moveResult = game.move({ from, to });
-                console.log('Move made by:', userEmail);
                 const updatedBoard = game.fen();
                 // Update the turn in the game state
                 gameData.turn = game.turn() === 'w' ? gameData.player1 : gameData.player2;
@@ -120,6 +119,39 @@ const handleMessage = async (message: Message, ws: WebSocketExtended, wss: WebSo
                 ws.send(JSON.stringify({ type: 'error', message: 'Invalid move' }));
             }
             break;
+
+        case 'reconnect':
+            const prevGameId = message.payload.gameId;
+            const disconnectedUserEmail = message.payload.userEmail;
+            console.log('Reconnect:', prevGameId, disconnectedUserEmail);
+            console.log('games:', games);
+
+            if (!games[prevGameId]) {
+                ws.send(JSON.stringify({ type: 'error', message: 'Game not found' }));
+                return;
+            }
+
+            const preGameData = games[prevGameId];
+
+            if (preGameData.player1 !== disconnectedUserEmail && preGameData.player2 !== disconnectedUserEmail) {
+                ws.send(JSON.stringify({ type: 'error', message: 'User not part of this game' }));
+                return;
+            }
+
+            ws.gameId = prevGameId;
+            ws.userEmail = disconnectedUserEmail;
+
+            ws.send(
+                JSON.stringify({
+                    type: 'board_update',
+                    board: preGameData.game.fen(),
+                    turn: preGameData.turn,
+                })
+            );
+
+            break;
+
+
         default:
             console.log('Unknown message type', message.type);
     }
@@ -145,6 +177,10 @@ const setupWebSocket = (server: http.Server) => {
             }
         });
 
+        ws.on('close', () => {
+            console.log('Client disconnected');
+        });
+
         ws.send(JSON.stringify({ type: 'welcome', payload: 'Hello! Message From Server!!' }));
     });
 
@@ -152,15 +188,13 @@ const setupWebSocket = (server: http.Server) => {
     setInterval(() => {
         wss.clients.forEach((ws) => {
             const wsExtended = ws as WebSocketExtended;
-            if (!wsExtended.isAlive) return wsExtended.terminate();
-
-            wsExtended.isAlive = false;
-            wsExtended.ping(undefined, false, (err: Error) => {
-                if (err) {
-                    console.error('Ping error:', err);
-                    wsExtended.terminate();
-                }
-            });
+            if (!wsExtended.isAlive) {
+                wsExtended.terminate();
+                console.log('Terminated a stale connection');
+            } else {
+                wsExtended.isAlive = false;
+                wsExtended.ping();
+            }
         });
     }, 30000);
 
