@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import AuthState from "@/context/Auth/AuthState";
 import Navbar from "@/components/Navbar";
+import SocketState from "@/context/Socket/SocketState";
+import GameState from "@/context/Game/GameState";
 
 
 export const metadata: Metadata = {
@@ -18,8 +20,12 @@ export default function RootLayout({
     <html lang="en">
       <body className={``}>
         <AuthState>
-          <Navbar />
-          {children}
+          <SocketState>
+            <Navbar />
+            <GameState>
+              {children}
+            </GameState>
+          </SocketState>
         </AuthState>
       </body>
     </html>

@@ -1,76 +1,41 @@
 'use client'
-import React, { useContext, useEffect, useState } from 'react';
-import { Chess, Move, Square } from 'chess.js';
-import { Chessboard } from 'react-chessboard';
-import { AuthContext } from '@/context/Auth/authContext';
-import { toast, Toaster } from 'react-hot-toast';
 
-interface SquareStyles {
-    [key: string]: {
-        background: string;
-        borderRadius?: string;
-    };
+import { GameContext, SquareStyles } from "./gameContext"
+
+import React, { useState, ReactNode, useContext, useEffect } from "react";
+
+import { AuthContext } from "../Auth/authContext";
+import { SocketContext } from "../Socket/socketContext";
+import { Chess, Move, Square } from "chess.js";
+import { toast, Toaster } from "react-hot-toast";
+import { useRouter } from "next/navigation";
+
+interface GameStateProps {
+    children: ReactNode;
 }
 
-const ChessBoard: React.FC = () => {
+const GameState: React.FC<GameStateProps> = ({ children }) => {
     const [game, setGame] = useState(new Chess());
-    const [socket, setSocket] = useState<WebSocket | null>(null);
     const [turn, setTurn] = useState<string>('');
     const [gameId, setGameId] = useState<string>('');
-
     const [moveFrom, setMoveFrom] = useState("");
     const [moveTo, setMoveTo] = useState<Square | null>(null);
     const [showPromotionDialog, setShowPromotionDialog] = useState(false);
     const [rightClickedSquares, setRightClickedSquares] = useState<SquareStyles>({});
     const [optionSquares, setOptionSquares] = useState<SquareStyles>({});
 
-
-    const context = useContext(AuthContext);
-    if (!context) {
+    const authContext = useContext(AuthContext);
+    const socketContext = useContext(SocketContext);
+    const router = useRouter();
+    if (!authContext) {
         throw new Error('AuthContext is not defined');
     }
-    const { user } = context;
+    const { user } = authContext;
 
-    useEffect(() => {
-        if (!user) {
-            toast.error('You must be logged in to play chess');
-            return;
-        }
-        const ws = new WebSocket('ws://localhost:5000');
-        setSocket(ws);
-
-        ws.onopen = () => {
-            console.log('Connected to WebSocket server');
-            ws.send(JSON.stringify({ type: 'init_game', payload: { userEmail: user?.email } }));
-        };
-
-        ws.onmessage = (message) => {
-            const parsedData = JSON.parse(message.data);
-            console.log('Received message:', parsedData);
-            const { type } = parsedData;
-            if (type === 'game_started') {
-                setGameId(parsedData.gameId);
-                setTurn(parsedData.turn);
-            } else if (type === 'waiting_for_opponent') {
-                toast('Waiting for opponent to join');
-            } else if (type === 'board_update') {
-                const { board, turn } = parsedData;
-                game.load(board);
-                setGame(new Chess(game.fen()));
-                setTurn(turn);
-            } else if (type === 'error') {
-                toast.error(parsedData.message);
-            }
-        };
-
-        ws.onclose = () => {
-            console.log('Disconnected from WebSocket server');
-        };
-
-        return () => {
-            ws.close();
-        };
-    }, []);
+    if (!socketContext) {
+        throw new Error('SocketContext is not defined');
+    }
+    const { socket } = socketContext;
 
     const makeMove = (sourceSquare: string, targetSquare: string) => {
         if (turn !== user?.email) {
@@ -195,21 +160,66 @@ const ChessBoard: React.FC = () => {
         }
     }
 
-    return (
-        <div>
-            <Toaster />
-            <Chessboard
-                position={game.fen()}
-                arePiecesDraggable={false}
-                onSquareClick={onSquareClick}
-                onPieceDrop={(sourceSquare, targetSquare) => makeMove(sourceSquare, targetSquare)}
-                customSquareStyles={{
-                    ...optionSquares,
-                    ...rightClickedSquares,
-                }}
-            />
-        </div>
-    );
-};
+    useEffect(() => {
+        if (!socket) {
+            return;
+        }
 
-export default ChessBoard;
+        socket.onmessage = (message) => {
+            const parsedData = JSON.parse(message.data);
+            console.log('In gamestate', parsedData);
+            const { type } = parsedData;
+            if (type === 'waiting_for_opponent') {
+                toast.loading('Waiting for opponent to join');
+                console.log('Waiting for opponent to join');
+            } if (type === 'game_started') {
+                toast.dismiss();
+                setTurn(parsedData.turn);
+                setGameId(parsedData.gameId);
+                // setGame(new Chess(parsedData.board));
+                router.push(`/game/${parsedData.gameId}`);
+            } else if (type === 'board_update') {
+                const { board, turn } = parsedData;
+                game.load(board);
+                setGame(new Chess(game.fen()));
+                setTurn(turn);
+            }
+        };
+
+        socket.onclose = () => {
+            console.log('Disconnected from WebSocket server');
+        };
+
+        return () => {
+            socket.close();
+        };
+    }, [socket]);
+
+    return (
+        <GameContext.Provider
+            value={{
+                game,
+                setGame,
+                turn,
+                setTurn,
+                gameId,
+                setGameId,
+                moveFrom,
+                setMoveFrom,
+                moveTo,
+                setMoveTo,
+                showPromotionDialog,
+                setShowPromotionDialog,
+                rightClickedSquares,
+                setRightClickedSquares,
+                optionSquares,
+                setOptionSquares,
+                onSquareClick,
+            }}>
+            <Toaster />
+            {children}
+        </GameContext.Provider>
+    );
+}
+
+export default GameState;

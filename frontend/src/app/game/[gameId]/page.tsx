@@ -1,9 +1,10 @@
 import React from 'react'
+import ChessBoard from './ChessBoard'
 
-const page = ({ gameId }: { gameId: any }) => {
+const page = () => {
     return (
-        <div>
-            {gameId}
+        <div className="bg-[#424556] min-h-screen flex items-center justify-center">
+            <ChessBoard />
         </div>
     )
 }
