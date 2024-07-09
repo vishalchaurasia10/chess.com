@@ -161,20 +161,6 @@ const GameState: React.FC<GameStateProps> = ({ children }) => {
         }
     }
 
-    // function reconnect(newSocket: WebSocket) {
-    //     if (newSocket) {
-    //         newSocket.send(
-    //             JSON.stringify({
-    //                 type: 'reconnect',
-    //                 payload: {
-    //                     gameId,
-    //                     userEmail: user?.email,
-    //                 },
-    //             })
-    //         );
-    //     }
-    // }
-
     useEffect(() => {
         if (!socket) {
             return;

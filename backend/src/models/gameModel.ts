@@ -22,6 +22,8 @@ const gameSchema = new mongoose.Schema({
         enum: ['player1', 'player2', 'draw', 'ongoing'],
         default: 'ongoing'
     }
+}, {
+    timestamps: true
 })
 
 const Game = mongoose.model('Game', gameSchema);
