@@ -43,3 +43,4 @@ uploads/
 #Environment variables
 .env
 config.env
+**/dist
