@@ -34,7 +34,7 @@ const Signup = () => {
 
     return (
         <div className='flex px-8 md:px-40 lg:px-0 py-10 md:py-16 lg:pt-12 lg:py-0 flex-col items-center justify-center space-y-4 lg:space-y-3 xl:space-y-4'>
-            <h1 className='text-4xl md:text-5xl font-bold md:pb-4 lg:pb-0 xl:pb-4 lg:py-2'>Create an account</h1>
+            <h1 className='text-4xl md:text-5xl font-bold md:pb-4 lg:pb-0 xl:pb-4 lg:py-2 whitespace-nowrap'>Create an account</h1>
             <button className='btn btn-outline w-full lg:w-1/2 border-2 rounded-xl'>
                 <span className='text-2xl pb-1'>
                     <FcGoogle />

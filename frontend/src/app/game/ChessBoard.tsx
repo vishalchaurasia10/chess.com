@@ -73,7 +73,7 @@ const ChessBoard: React.FC = () => {
     }, []);
 
     const makeMove = (sourceSquare: string, targetSquare: string) => {
-        if(turn !== user?.email) {
+        if (turn !== user?.email) {
             toast.error('Not your turn');
             return false;
         }
@@ -131,7 +131,7 @@ const ChessBoard: React.FC = () => {
     }
 
     function onSquareClick(square: Square) {
-        if(turn !== user?.email) {
+        if (turn !== user?.email) {
             return;
         }
         setRightClickedSquares({});

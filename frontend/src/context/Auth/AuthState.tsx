@@ -11,6 +11,7 @@ interface AuthStateProps {
 
 const AuthState: React.FC<AuthStateProps> = ({ children }) => {
     const [user, setUser] = useState<null | User>(null);
+    const [socket, setSocket] = useState<WebSocket | null>(null);
     const router = useRouter();
 
     const signup = async (credentials: { email: string, password: string }) => {
@@ -44,7 +45,7 @@ const AuthState: React.FC<AuthStateProps> = ({ children }) => {
 
     const signin = async (credentials: Credentials) => {
         toast.loading('Signing in...');
-        
+
         try {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
                 method: 'POST',
@@ -106,7 +107,16 @@ const AuthState: React.FC<AuthStateProps> = ({ children }) => {
     return (
         <>
             <Toaster />
-            <AuthContext.Provider value={{ user, setUser, signup, signin, signout } as AuthContextType}>
+            <AuthContext.Provider
+                value={{
+                    user,
+                    socket,
+                    setSocket,
+                    setUser,
+                    signup,
+                    signin,
+                    signout
+                } as AuthContextType}>
                 {children}
             </AuthContext.Provider>
         </>
