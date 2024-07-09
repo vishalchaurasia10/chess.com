@@ -10,12 +10,12 @@ const UserInfo = () => {
     }
     const { user } = authContext;
     return (
-        <div className='mt-10'>
+        <div className='mt-10 px-8'>
             {
                 !user ? <ProfileSkeleton /> :
                     <>
-                        <h2 className=''><span className='font-bold'>Name: </span>{user?.name}</h2>
-                        <h2 className=''><span className='font-bold'>Email: </span>{user?.email}</h2>
+                        <h2 title={user?.name} className='truncate'><span className='font-bold'>Name: </span>{user?.name}</h2>
+                        <h2 title={user?.email} className='truncate'><span className='font-bold'>Email: </span>{user?.email}</h2>
                     </>
             }
         </div>

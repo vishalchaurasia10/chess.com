@@ -6,13 +6,13 @@ import UserInfo from './UserInfo'
 const Profile = () => {
     return (
         <div className='min-h-screen p-2 lg:pl-32 w-full lg:flex bg-center bg-cover bg-[url("/chess.avif")] bg-fixed text-white font-firaCode'>
-            <div className='lg:mt-28 py-20 rounded-lg shadow-2xl shadow-black flex flex-col justify-center items-center space-y-6 lg:w-1/5 lg:sticky lg:top-24 h-full bg-[rgba(255,255,255,0.1)]'>
+            <div className='lg:mt-28 py-20 rounded-lg shadow-2xl shadow-black flex flex-col justify-center items-center space-y-6 lg:w-1/4 lg:sticky lg:top-24 h-full bg-[rgba(255,255,255,0.1)]'>
                 <div className="avatar">
                     <div className="ring-primary ring-offset-base-100 w-48 rounded-full ring ring-offset-2">
                         <Image src="/profile.webp" alt="dp" width={500} height={500} className='rounded-full' />
                     </div>
                 </div>
-                <div className="user">
+                <div className="user w-full">
                     <UserInfo />
                 </div>
             </div>
