@@ -18,7 +18,7 @@ const GameState: React.FC<GameStateProps> = ({ children }) => {
     const [game, setGame] = useState(new Chess());
     const [turn, setTurn] = useState<string>('');
     const [gameId, setGameId] = useState<string>('');
-    const [moveFrom, setMoveFrom] = useState("");
+    const [moveFrom, setMoveFrom] = useState<Square | null>(null);
     const [moveTo, setMoveTo] = useState<Square | null>(null);
     const [showPromotionDialog, setShowPromotionDialog] = useState(false);
     const [rightClickedSquares, setRightClickedSquares] = useState<SquareStyles>({});
@@ -123,7 +123,7 @@ const GameState: React.FC<GameStateProps> = ({ children }) => {
                 // check if clicked on new piece
                 const hasMoveOptions = getMoveOptions(square);
                 // if new piece, setMoveFrom, otherwise clear moveFrom
-                setMoveFrom(hasMoveOptions ? square : "");
+                setMoveFrom(hasMoveOptions ? square : null);
                 return;
             }
 
@@ -153,7 +153,7 @@ const GameState: React.FC<GameStateProps> = ({ children }) => {
                 return;
             }
 
-            setMoveFrom("");
+            setMoveFrom(null);
             setMoveTo(null);
             setOptionSquares({});
             return;

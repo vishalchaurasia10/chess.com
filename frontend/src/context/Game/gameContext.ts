@@ -15,8 +15,8 @@ export interface GameContextType {
     setTurn: React.Dispatch<React.SetStateAction<string>>;
     gameId: string;
     setGameId: React.Dispatch<React.SetStateAction<string>>;
-    moveFrom: string;
-    setMoveFrom: React.Dispatch<React.SetStateAction<string>>;
+    moveFrom: string | null;
+    setMoveFrom: React.Dispatch<React.SetStateAction<Square | null>>;
     moveTo: string | null;
     setMoveTo: React.Dispatch<React.SetStateAction<Square | null>>;
     showPromotionDialog: boolean;
