@@ -2,6 +2,7 @@
 import React, { useContext, useEffect, useState } from 'react'
 import { AuthContext } from '@/context/Auth/authContext';
 import Image from 'next/image';
+import Skeleton from './Skeleton';
 
 interface Game {
     player1: string;
@@ -17,14 +18,14 @@ interface GameProps {
 
 const GetGames = () => {
     const [games, setGames] = useState<Game[]>([]);
+    const [loading, setLoading] = useState(true);
     const authContext = useContext(AuthContext);
-    if (!authContext) {
-        return null;
-    }
+    if (!authContext) throw new Error('AuthContext is not found');
     const { user } = authContext;
 
     useEffect(() => {
         const getGames = async () => {
+            setLoading(true);
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/game/get-games`, {
                 method: 'POST',
                 headers: {
@@ -37,6 +38,7 @@ const GetGames = () => {
             const data = await res.json();
             console.log(data);
             setGames(data);
+            setLoading(false);
         };
         if (user) {
             getGames();
@@ -45,10 +47,20 @@ const GetGames = () => {
 
     return (
         <div className='flex flex-wrap'>
+
             {
-                games && games.map((game, index) => (
-                    <Game key={index} game={game} />
-                ))
+                loading ?
+                    [1, 2, 3, 4, 5].map((n) => (
+                        <Skeleton key={n} />
+                    ))
+                    :
+                    games &&
+                        games.length > 0 ?
+                        games.map((game, index) => (
+                            <Game key={index} game={game} />
+                        ))
+                        :
+                        <div className='text-center p-10 text-2xl font-bold'>No games played yet</div>
             }
         </div>
     )
