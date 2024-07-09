@@ -14,7 +14,7 @@ const AuthState: React.FC<AuthStateProps> = ({ children }) => {
     const [socket, setSocket] = useState<WebSocket | null>(null);
     const router = useRouter();
 
-    const signup = async (credentials: { email: string, password: string }) => {
+    const signup = async (credentials: Credentials) => {
 
         toast.loading('Signing up...');
 
@@ -43,7 +43,7 @@ const AuthState: React.FC<AuthStateProps> = ({ children }) => {
         }
     };
 
-    const signin = async (credentials: Credentials) => {
+    const signin = async (credentials: { email: string, password: string }) => {
         toast.loading('Signing in...');
 
         try {
@@ -65,7 +65,8 @@ const AuthState: React.FC<AuthStateProps> = ({ children }) => {
             toast.success('Signin successful! 🎉');
             localStorage.setItem('accessToken', data.token);
             setUser({
-                email: credentials.email
+                email: data.email,
+                name: data.name
             });
         } catch (error) {
             console.log(error);
@@ -84,11 +85,16 @@ const AuthState: React.FC<AuthStateProps> = ({ children }) => {
             const data = await response.json();
             if (response.status === 200) {
                 const email = data.email;
+                const name = data.name;
                 setUser({
-                    email
+                    email: email,
+                    name: name
                 });
+            } else {
+                router.push('/sign-in');
             }
         } catch (error) {
+            router.push('/sign-in');
             console.log(error);
         }
     }

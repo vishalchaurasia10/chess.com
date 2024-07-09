@@ -7,7 +7,7 @@ import { FcGoogle } from 'react-icons/fc'
 import Link from 'next/link'
 
 const Signup = () => {
-    const [credentials, setCredentials] = useState({ email: '', password: '' })
+    const [credentials, setCredentials] = useState({ email: '', password: '', name: '' })
     const context = useContext(AuthContext);
 
     if (!context) {
@@ -43,6 +43,14 @@ const Signup = () => {
             </button>
             <Divider />
             <div className="inputs w-full lg:w-1/2 pb-6 lg:pb-0 xl:pb-6 flex flex-col items-center space-y-2">
+                <input
+                    onChange={handleChange}
+                    value={credentials.name}
+                    className='border-2 w-full outline-none bg-[#fafafa] border-[#c6c6c6] p-3 px-4 mx-4 rounded-xl'
+                    placeholder='Enter the name'
+                    type='text' name='name'
+                    id='name'
+                />
                 <input
                     onChange={handleChange}
                     value={credentials.email}

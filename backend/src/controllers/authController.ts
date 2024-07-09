@@ -4,13 +4,13 @@ import jwt, { JwtPayload } from 'jsonwebtoken';
 import User from '../models/userModel';
 
 export const register = async (req: Request, res: Response) => {
-    const { email, password } = req.body;
+    const { email, password, name } = req.body;
     try {
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(401).send({ error: 'User already exists' });
         }
-        const user = new User({ email, password });
+        const user = new User({ email, password, name });
         await user.save();
         res.status(201).send('User registered');
     } catch (error) {
@@ -34,7 +34,7 @@ export const login = async (req: Request, res: Response) => {
             process.env.JWT_SECRET ?? 'defaultSecret',
             { expiresIn: '30d' }
         );
-        res.status(200).json({ token });
+        res.status(200).json({ token, email: user.email, name: user.name });
     } catch (error) {
         res.status(500).send({ error: 'Server error' });
     }
@@ -63,7 +63,7 @@ export const verifyjwt = async (req: Request, res: Response) => {
         if (!user) {
             return res.status(401).json({ error: 'User not found' });
         }
-        return res.status(200).json({ email: user.email });
+        return res.status(200).json({ email: user.email, name: user.name });
     } catch (error) {
         res.status(401).json({ error: 'Please authenticate' });
     }

@@ -10,9 +10,23 @@ const UserInfo = () => {
     }
     const { user } = authContext;
     return (
-        <div>
-            {/* <h1 className='text-4xl font-extrabold'>{user?.name}</h1> */}
-            <h2 className=''><span className='font-bold'>Email: </span>{user?.email}</h2>
+        <div className='mt-10'>
+            {
+                !user ? <ProfileSkeleton /> :
+                    <>
+                        <h2 className=''><span className='font-bold'>Name: </span>{user?.name}</h2>
+                        <h2 className=''><span className='font-bold'>Email: </span>{user?.email}</h2>
+                    </>
+            }
+        </div>
+    )
+}
+
+const ProfileSkeleton = () => {
+    return (
+        <div className="flex flex-col gap-3">
+            <div className="skeleton bg-gray-500 h-4 w-40"></div>
+            <div className="skeleton bg-gray-500 h-4 w-48"></div>
         </div>
     )
 }
