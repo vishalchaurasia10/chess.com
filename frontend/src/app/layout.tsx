@@ -18,7 +18,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={``}>
+      <body>
         <AuthState>
           <SocketState>
             <Navbar />
@@ -28,6 +28,6 @@ export default function RootLayout({
           </SocketState>
         </AuthState>
       </body>
-    </html>
+    </html >
   );
 }

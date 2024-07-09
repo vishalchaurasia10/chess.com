@@ -13,7 +13,7 @@ const SideBar = () => {
     }
     const { user, signout } = context;
     return (
-        <div className="fixed z-50 top-0 left-0 h-screen w-16 flex flex-col bg-[rgba(255,255,255,0.2)] shadow-lg">
+        <div className="fixed z-50 bottom-0 lg:top-0 lg:left-0 w-full lg:h-screen lg:w-16 flex flex-row lg:flex-col bg-[rgba(255,255,255,0.2)] shadow-lg backdrop-blur-2xl">
             <SideBarIcon icon={<SiChessdotcom size="28" />} text='Chess.com' toUrl='/' />
             <Divider />
             <SideBarIcon icon={<BsPlus size="32" />} text='Play new game ♟️' toUrl='/game' />
@@ -41,8 +41,8 @@ type SideBarIconProps = {
 };
 
 const SideBarIcon = ({ icon, text = 'tooltip 💡', toUrl = '/' }: SideBarIconProps) => (
-    <Link href={toUrl}>
-        <div className="sidebar-icon group">
+    <Link className='' href={toUrl}>
+        <div className="sidebar-icon group mx-2">
             {icon}
             <span className="sidebar-tooltip group-hover:scale-100">
                 {text}
@@ -52,6 +52,6 @@ const SideBarIcon = ({ icon, text = 'tooltip 💡', toUrl = '/' }: SideBarIconPr
 );
 
 
-const Divider = () => <hr className="sidebar-hr" />;
+const Divider = () => <hr className="h-8 lg:h-0 my-auto lg:my-0 sidebar-hr" />;
 
 export default SideBar;
