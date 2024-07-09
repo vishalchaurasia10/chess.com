@@ -17,7 +17,7 @@ export interface AuthContextType {
     setSocket: React.Dispatch<React.SetStateAction<WebSocket | null>>;
     setUser: React.Dispatch<React.SetStateAction<null | User>>;
     signup: (credentials: Credentials) => void;
-    signin: (credentials: Credentials) => void; // Add signin function
+    signin: (credentials: { email: string, password: string }) => void; // Add signin function
     signout: () => void;
 }
 

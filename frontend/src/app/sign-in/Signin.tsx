@@ -22,7 +22,7 @@ const Signin = () => {
     }
 
     const handleSignin = async () => {
-        signin(credentials)
+        signin({ email: credentials.email, password: credentials.password })
     }
 
     useEffect(() => {
