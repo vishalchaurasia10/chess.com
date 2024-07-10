@@ -57,10 +57,10 @@ const handleMessage = async (message: Message, ws: WebSocketExtended, wss: WebSo
                 ws.gameId = gameId;
 
                 pendingUser.send(
-                    JSON.stringify({ type: 'game_started', gameId, board: chess.fen(), turn: pendingUser.userEmail })
+                    JSON.stringify({ type: 'game_started', gameId, board: chess.fen(), turn: pendingUser.userEmail, color: 'white' })
                 );
                 ws.send(
-                    JSON.stringify({ type: 'game_started', gameId, board: chess.fen(), turn: pendingUser.userEmail })
+                    JSON.stringify({ type: 'game_started', gameId, board: chess.fen(), turn: pendingUser.userEmail, color: 'black'})
                 );
 
                 pendingUser = null;
@@ -171,6 +171,7 @@ const handleMessage = async (message: Message, ws: WebSocketExtended, wss: WebSo
                     type: 'board_update',
                     board: preGameData.game.fen(),
                     turn: preGameData.turn,
+                    color: preGameData.player1 === disconnectedUserEmail ? 'white' : 'black',
                 })
             );
 

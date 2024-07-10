@@ -1,6 +1,6 @@
 import { Square } from "chess.js";
 import React, { createContext } from "react";
-import { PromotionPieceOption } from "react-chessboard/dist/chessboard/types";
+import { BoardOrientation, PromotionPieceOption } from "react-chessboard/dist/chessboard/types";
 
 export interface SquareStyles {
     [key: string]: {
@@ -30,6 +30,7 @@ export interface GameContextType {
     onSquareClick: (square: Square) => void;
     onSquareRightClick: (square: Square) => void;
     gameRecover: boolean;
+    orientation: BoardOrientation;
 }
 
 export const GameContext = createContext<GameContextType | undefined>(undefined);

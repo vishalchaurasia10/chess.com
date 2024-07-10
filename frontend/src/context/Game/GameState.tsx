@@ -9,7 +9,8 @@ import { SocketContext } from "../Socket/socketContext";
 import { Chess, Move, Square } from "chess.js";
 import { toast, Toaster } from "react-hot-toast";
 import { usePathname, useRouter } from "next/navigation";
-import { PromotionPieceOption } from "react-chessboard/dist/chessboard/types";
+import { BoardOrientation, PromotionPieceOption } from "react-chessboard/dist/chessboard/types";
+import { parse } from "path";
 
 interface GameStateProps {
     children: ReactNode;
@@ -25,6 +26,7 @@ const GameState: React.FC<GameStateProps> = ({ children }) => {
     const [rightClickedSquares, setRightClickedSquares] = useState<SquareStyles>({});
     const [optionSquares, setOptionSquares] = useState<SquareStyles>({});
     const [gameRecover, setGameRecover] = useState(false);
+    const [orientation, setOrientation] = useState<BoardOrientation>('white'); // ['white', 'black'
 
     const authContext = useContext(AuthContext);
     const socketContext = useContext(SocketContext);
@@ -226,16 +228,19 @@ const GameState: React.FC<GameStateProps> = ({ children }) => {
                 console.log('Waiting for opponent to join');
             } else if (type === 'game_started') {
                 toast.dismiss();
+                setOrientation(parsedData.color);
                 setTurn(parsedData.turn);
                 setGameId(parsedData.gameId);
                 setGame(new Chess(parsedData.board));
                 router.push(`/game/${parsedData.gameId}`);
             } else if (type === 'board_update') {
-                const { board, turn } = parsedData;
+                const { board, turn, color } = parsedData;
                 if (!gameRecover) {
                     setGameRecover(true);
                 }
                 game.load(board);
+                if (color)
+                    setOrientation(color);
                 setGame(new Chess(game.fen()));
                 setTurn(turn);
             } else if (type === 'promotion') {
@@ -307,6 +312,7 @@ const GameState: React.FC<GameStateProps> = ({ children }) => {
                 onPromotionPieceSelect,
                 onSquareRightClick,
                 gameRecover,
+                orientation,
             }}>
             <Toaster />
             {children}
