@@ -22,11 +22,11 @@ const ChessBoard: React.FC = () => {
     if (!gameContext) {
         throw new Error('GameContext is not defined');
     }
-    const { game, onSquareClick, optionSquares, rightClickedSquares } = gameContext;
+    const { gameRecover, gameId, game, onSquareClick, optionSquares, rightClickedSquares, onPromotionPieceSelect, showPromotionDialog, moveTo, onSquareRightClick } = gameContext;
     if (!socketContext) {
         throw new Error('SocketContext is not defined');
     }
-    const { socket } = socketContext;
+    const { socket, setSocket } = socketContext;
 
     const disconnectSocket = () => {
         if (socket) {
@@ -35,27 +35,45 @@ const ChessBoard: React.FC = () => {
     };
 
     useEffect(() => {
-        if (!user) {
-            toast.error('You must be logged in to play chess');
-            router.push('/sign-in');
-            return;
+        const recoverGame = async () => {
+            if (!gameId || !user?.email) {
+                return;
+            }
+            const newSocket = new WebSocket('ws://localhost:5000')
+            setSocket(newSocket);
+            newSocket.onopen = () => {
+                newSocket.send(
+                    JSON.stringify({
+                        type: 'reconnect',
+                        payload: {
+                            gameId,
+                            userEmail: user?.email,
+                        },
+                    })
+                );
+            }
         }
-    }, [user]);
-
-
+        recoverGame();
+    }, [gameId, user]);
 
     return (
         <div className='w-[90%] lg:w-[48%] shadow-2xl shadow-black'>
             <Toaster />
-            <button onClick={disconnectSocket}>Disconnect Socket</button>
+            {/* <button onClick={disconnectSocket}>Disconnect Socket</button> */}
             <Chessboard
+                key={gameRecover === true ? 'recover' : 'new'}
                 position={game.fen()}
                 arePiecesDraggable={false}
+                // onPromotionPieceSelect={onPromotionPieceSelect}
+                // promotionToSquare={moveTo}
+                // showPromotionDialog={showPromotionDialog}
                 onSquareClick={onSquareClick}
+                onSquareRightClick={onSquareRightClick}
                 customSquareStyles={{
                     ...optionSquares,
                     ...rightClickedSquares,
                 }}
+            // orientation={game.turn() === 'w' ? 'white' : 'black'}
             />
         </div>
     );

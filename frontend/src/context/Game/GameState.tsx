@@ -9,6 +9,7 @@ import { SocketContext } from "../Socket/socketContext";
 import { Chess, Move, Square } from "chess.js";
 import { toast, Toaster } from "react-hot-toast";
 import { usePathname, useRouter } from "next/navigation";
+import { PromotionPieceOption } from "react-chessboard/dist/chessboard/types";
 
 interface GameStateProps {
     children: ReactNode;
@@ -23,6 +24,7 @@ const GameState: React.FC<GameStateProps> = ({ children }) => {
     const [showPromotionDialog, setShowPromotionDialog] = useState(false);
     const [rightClickedSquares, setRightClickedSquares] = useState<SquareStyles>({});
     const [optionSquares, setOptionSquares] = useState<SquareStyles>({});
+    const [gameRecover, setGameRecover] = useState(false);
 
     const authContext = useContext(AuthContext);
     const socketContext = useContext(SocketContext);
@@ -161,6 +163,55 @@ const GameState: React.FC<GameStateProps> = ({ children }) => {
         }
     }
 
+    function onPromotionPieceSelect(piece?: PromotionPieceOption, promoteFromSquare?: Square, promoteToSquare?: Square): boolean {
+        if (moveFrom)
+            promoteFromSquare = promoteFromSquare || moveFrom;
+        console.log('In promotion piece select', piece, promoteFromSquare, promoteToSquare);
+        if (piece && promoteFromSquare && promoteToSquare && socket) {
+            const gameCopy = new Chess(game.fen());
+            const move = gameCopy.move({
+                from: promoteFromSquare,
+                to: promoteToSquare,
+                promotion: piece.toLowerCase() ?? "q",
+            });
+            console.log('Move', move);
+            if (move) {
+                setGame(gameCopy);
+                socket.send(JSON.stringify({
+                    type: 'promotion',
+                    payload: {
+                        from: moveFrom,
+                        to: moveTo,
+                        promotion: piece.toLowerCase(),
+                        gameId,
+                    },
+                }));
+            }
+        }
+
+        setMoveFrom(null);
+        setMoveTo(null);
+        setShowPromotionDialog(false);
+        setOptionSquares({});
+        return true;
+    }
+
+
+    function onSquareRightClick(square: Square) {
+        const colour = "rgba(0, 0, 255, 0.4)";
+        setRightClickedSquares((prev) => {
+            const newSquares: SquareStyles = { ...prev };
+
+            if (newSquares[square] && newSquares[square].background === colour) {
+                delete newSquares[square];
+            } else {
+                newSquares[square] = { background: colour };
+            }
+
+            return newSquares;
+        });
+    }
+
     useEffect(() => {
         if (!socket) {
             return;
@@ -177,19 +228,30 @@ const GameState: React.FC<GameStateProps> = ({ children }) => {
                 toast.dismiss();
                 setTurn(parsedData.turn);
                 setGameId(parsedData.gameId);
-                // setGame(new Chess(parsedData.board));
+                setGame(new Chess(parsedData.board));
                 router.push(`/game/${parsedData.gameId}`);
             } else if (type === 'board_update') {
                 const { board, turn } = parsedData;
+                if (!gameRecover) {
+                    setGameRecover(true);
+                }
                 game.load(board);
                 setGame(new Chess(game.fen()));
                 setTurn(turn);
+            } else if (type === 'promotion') {
+                const { from, to, promotion } = parsedData.payload;
+                const newGame = new Chess(game.fen());
+                newGame.move({ from, to, promotion });
+                setGame(newGame);
+            } else if (type === 'error') {
+                toast.error(parsedData.message);
             }
         };
 
         const handleSocketClose = () => {
             setSocket(null);
             console.log('Disconnected from WebSocket server');
+            if (gameId.length < 0) return;
             setTimeout(() => {
                 const newSocket = new WebSocket('ws://localhost:5000');
                 setSocket(newSocket);
@@ -242,6 +304,9 @@ const GameState: React.FC<GameStateProps> = ({ children }) => {
                 optionSquares,
                 setOptionSquares,
                 onSquareClick,
+                onPromotionPieceSelect,
+                onSquareRightClick,
+                gameRecover,
             }}>
             <Toaster />
             {children}

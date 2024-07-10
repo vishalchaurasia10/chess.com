@@ -11,7 +11,7 @@ interface WebSocketExtended extends WebSocket {
 }
 
 // Message Types
-type MessageType = 'init_game' | 'move' | 'reconnect';
+type MessageType = 'init_game' | 'move' | 'reconnect' | 'promotion';
 
 interface Message {
     type: MessageType;
@@ -126,21 +126,46 @@ const handleMessage = async (message: Message, ws: WebSocketExtended, wss: WebSo
             console.log('Reconnect:', prevGameId, disconnectedUserEmail);
             console.log('games:', games);
 
-            if (!games[prevGameId]) {
-                ws.send(JSON.stringify({ type: 'error', message: 'Game not found' }));
-                return;
+            // Check if game exists in the in-memory object
+            let preGameData = games[prevGameId];
+
+            // If not in memory, fetch from the database
+            if (!preGameData) {
+                try {
+                    const dbGame = await Game.findById(prevGameId);
+                    if (!dbGame) {
+                        ws.send(JSON.stringify({ type: 'error', message: 'Game not found' }));
+                        return;
+                    }
+
+                    // Construct game data from database record
+                    preGameData = {
+                        game: new Chess(dbGame.board),
+                        turn: dbGame.turn,
+                        player1: dbGame.player1,
+                        player2: dbGame.player2,
+                    };
+
+                    // Store in in-memory object for future use
+                    games[prevGameId] = preGameData;
+                } catch (error) {
+                    console.error('Error fetching game from database:', error);
+                    ws.send(JSON.stringify({ type: 'error', message: 'Error fetching game from database' }));
+                    return;
+                }
             }
 
-            const preGameData = games[prevGameId];
-
+            // Validate user participation in the game
             if (preGameData.player1 !== disconnectedUserEmail && preGameData.player2 !== disconnectedUserEmail) {
                 ws.send(JSON.stringify({ type: 'error', message: 'User not part of this game' }));
                 return;
             }
 
+            // Update WebSocket with game details
             ws.gameId = prevGameId;
             ws.userEmail = disconnectedUserEmail;
 
+            // Send current game state to the user
             ws.send(
                 JSON.stringify({
                     type: 'board_update',
@@ -151,6 +176,56 @@ const handleMessage = async (message: Message, ws: WebSocketExtended, wss: WebSo
 
             break;
 
+
+        case 'promotion':
+            const { from: fromP, to: toP, promotion, gameId: promotionGameId } = message.payload;
+            const promotionGameData = games[promotionGameId];
+            console.log('promotionGameData:', promotionGameData);
+
+            if (!promotionGameData) {
+                console.log('Game not found');
+                ws.send(JSON.stringify({ type: 'error', message: 'Game not found' }));
+                return;
+            }
+
+            const promotionGame = new Chess(promotionGameData.game.fen());
+            const promotionTurn = promotionGameData.turn;
+
+            if (promotionTurn !== userEmail) {
+                ws.send(JSON.stringify({ type: 'error', message: 'Not your turn' }));
+                return;
+            }
+
+            const move = promotionGame.move({ from: fromP, to: toP, promotion });
+
+            if (!move) {
+                ws.send(JSON.stringify({ type: 'error', message: 'Invalid move' }));
+                return;
+            }
+
+            const updatedPromotionBoard = promotionGame.fen();
+            promotionGameData.game.load(updatedPromotionBoard); // Update the game state
+            promotionGameData.turn = promotionGame.turn() === 'w' ? promotionGameData.player1 : promotionGameData.player2;
+
+            await Game.updateOne(
+                { _id: promotionGameId },
+                { board: updatedPromotionBoard, turn: promotionGameData.turn }
+            );
+
+            wss.clients.forEach((client) => {
+                const extendedClient = client as WebSocketExtended;
+                if (extendedClient.gameId === promotionGameId) {
+                    extendedClient.send(
+                        JSON.stringify({
+                            type: 'board_update',
+                            board: updatedPromotionBoard,
+                            turn: promotionGameData.turn,
+                        })
+                    );
+                }
+            });
+
+            break;
 
         default:
             console.log('Unknown message type', message.type);
@@ -178,7 +253,11 @@ const setupWebSocket = (server: http.Server) => {
         });
 
         ws.on('close', () => {
+            if (pendingUser === ws) {
+                pendingUser = null;
+            }
             console.log('Client disconnected');
+            console.log('total clients', wss.clients.size);
         });
 
         ws.send(JSON.stringify({ type: 'welcome', payload: 'Hello! Message From Server!!' }));
