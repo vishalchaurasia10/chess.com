@@ -3,7 +3,8 @@ import React from 'react';
 
 const Hero = () => {
     return (
-        <div className='pb-20 pt-5 lg:pt-0 lg:pb-0 font-firaCode flex items-center md:px-20 lg:px-20 xl:px-28 px-4 relative min-h-screen lg:bg-center bg-cover text-black bg-[url("/chess.avif")]'>
+        <div className='pb-20 pt-5 lg:pt-0 lg:pb-0 font-firaCode flex items-center md:px-20 lg:px-20 xl:px-28 px-4 relative min-h-screen lg:bg-center bg-cover text-black bg-[url("/chess.jpg")]'>
+            <div className='absolute h-full inset-0 bg-gradient-to-r md:bg-gradient-to-l from-transparent via-opacity-50 to-black'></div>
             <div className="content relative z-20 space-y-4 md:space-y-8">
                 <h1 className='text-6xl md:text-8xl font-bold text-white'>Master the Art of Chess</h1>
                 <h2 className='text-2xl md:text-5xl font-bold text-white'>Challenge Players Worldwide</h2>
