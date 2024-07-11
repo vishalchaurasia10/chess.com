@@ -22,17 +22,17 @@ const ChessBoard: React.FC = () => {
     if (!gameContext) {
         throw new Error('GameContext is not defined');
     }
-    const { checkSquare, gameStatus, threatened, winner, turn, orientation, gameRecover, gameId, game, onSquareClick, optionSquares, rightClickedSquares, onPromotionPieceSelect, showPromotionDialog, moveTo, onSquareRightClick } = gameContext;
+    const { timers, checkSquare, gameStatus, threatened, winner, turn, orientation, gameRecover, gameId, game, onSquareClick, optionSquares, rightClickedSquares, onPromotionPieceSelect, showPromotionDialog, moveTo, onSquareRightClick } = gameContext;
     if (!socketContext) {
         throw new Error('SocketContext is not defined');
     }
     const { socket, setSocket } = socketContext;
 
-    // const disconnectSocket = () => {
-    //     if (socket) {
-    //         socket.close();
-    //     }
-    // };
+    const formatTime = (milliseconds: number): string => {
+        const minutes = Math.floor(milliseconds / 60000);
+        const seconds = Math.floor((milliseconds % 60000) / 1000); // Ensure seconds is a number
+        return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+    };
 
     useEffect(() => {
         const recoverGame = async () => {
@@ -76,13 +76,36 @@ const ChessBoard: React.FC = () => {
                     boardOrientation={orientation}
                 />
             </div>
-            <p className='fixed w-full top-10 text-center lg:text-right lg:pr-2 text-4xl lg:text-3xl text-white font-poppins font-bold'>
-                {
-                    turn == user?.email ? 'Your Turn' : 'Opponents Turn'
-                }
-            </p>
+            <div className='fixed w-full top-10 text-center text-white font-poppins font-bold'>
+                <div className='lg:text-right lg:pr-2 text-4xl lg:text-3xl'>
+                    {
+                        turn == user?.email ? 'Your Turn' : 'Opponents Turn'
+                    }
+                </div>
+                <div>
+                    {
+                        orientation === 'white' ?
+                            <>
+                                <Clock message='Your Time' time={formatTime(timers.player1)} />
+                                <Clock message='Opponent&apos;s Time' time={formatTime(timers.player2)} />
+                            </> :
+                            <>
+                                <Clock message='Your Time' time={formatTime(timers.player2)} />
+                                <Clock message='Opponent&apos;s Time' time={formatTime(timers.player1)} />
+                            </>
+                    }
+                </div>
+            </div>
         </>
     );
 };
+
+const Clock: React.FC<{ time: string, message: string }> = ({ time, message }) => {
+    return (
+        <div>
+            {`${message}: ${time}`}
+        </div>
+    );
+}
 
 export default ChessBoard;

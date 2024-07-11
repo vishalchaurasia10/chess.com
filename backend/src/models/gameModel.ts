@@ -21,7 +21,11 @@ const gameSchema = new mongoose.Schema({
         type: String,
         enum: ['player1', 'player2', 'draw', 'ongoing'],
         default: 'ongoing'
-    }
+    },
+    timers: {
+        player1: { type: Number, required: true },
+        player2: { type: Number, required: true },
+    },
 }, {
     timestamps: true
 })

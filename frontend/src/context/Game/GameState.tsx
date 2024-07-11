@@ -30,6 +30,7 @@ const GameState: React.FC<GameStateProps> = ({ children }) => {
     const [gameStatus, setGameStatus] = useState<string>(''); // ['checkmate', 'stalemate', 'draw', 'ongoing']
     const [winner, setWinner] = useState<string>(''); // ['player1', 'player2', 'draw'
     const [checkSquare, setCheckSquare] = useState<Square | null>(null);
+    const [timers, setTimers] = useState({ player1: 300000, player2: 300000 });
 
     const authContext = useContext(AuthContext);
     const socketContext = useContext(SocketContext);
@@ -255,31 +256,11 @@ const GameState: React.FC<GameStateProps> = ({ children }) => {
                 setGame(new Chess(parsedData.board));
                 router.push(`/game/${parsedData.gameId}`);
             } else if (type === 'board_update') {
-                const { board, turn, color, gameStatus, winner, threatened } = parsedData;
+                const { board, turn, color } = parsedData;
                 if (!gameRecover) {
                     setGameRecover(true);
                 }
-                if (gameStatus) {
-                    if (gameStatus === 'draw') {
-                        toast((t) => <CustomToast message={`Game is draw.`} t={t} />)
-                    }
-                    setGameStatus(gameStatus);
-                }
-                if (winner) {
-                    toast((t) => <CustomToast message={`Player ${winner} is winner.`} t={t} />)
-                    setWinner(winner);
-                }
-                if (threatened) {
-                    setThreatened(threatened);
-                }
-                if (threatened === user?.email) {
-                    const kingSquare = getKingSquare(parsedData.board, orientation === 'white' ? 'w' : 'b');
-                    console.log('King square', kingSquare);
-                    setCheckSquare(kingSquare);
-                } else {
-                    console.log('Setting check square to null');
-                    setCheckSquare(null);
-                }
+                setTimers(parsedData.timers);
                 game.load(board);
                 if (color)
                     setOrientation(color);
@@ -290,7 +271,9 @@ const GameState: React.FC<GameStateProps> = ({ children }) => {
                 const newGame = new Chess(game.fen());
                 newGame.move({ from, to, promotion });
                 setGame(newGame);
-            } else if (type === 'error') {
+            } else if (type === 'timer_update') {
+                setTimers(parsedData.timers);
+            } else {
                 toast.error(parsedData.message);
             }
         };
@@ -359,6 +342,7 @@ const GameState: React.FC<GameStateProps> = ({ children }) => {
                 threatened,
                 winner,
                 checkSquare,
+                timers,
             }}>
             <Toaster />
             {children}

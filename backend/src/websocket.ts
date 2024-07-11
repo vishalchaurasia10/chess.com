@@ -8,6 +8,7 @@ interface WebSocketExtended extends WebSocket {
     isAlive: boolean;
     gameId?: string;
     userEmail?: string;
+    timer?: NodeJS.Timeout;
 }
 
 // Message Types
@@ -19,14 +20,22 @@ interface Message {
 }
 
 let pendingUser: WebSocketExtended | null = null;
-const games: {
-    [key: string]: {
-        game: Chess;
-        turn: string;
-        player1: string;
-        player2: string;
+interface GameData {
+    game: Chess;
+    turn: string;
+    player1: string;
+    player2: string;
+    timers: {
+        player1: number;
+        player2: number;
     };
-} = {};
+    timerIntervals: {
+        player1: NodeJS.Timeout | null;
+        player2: NodeJS.Timeout | null;
+    };
+}
+
+const games: { [key: string]: GameData } = {};
 
 // Function to handle different message types
 const handleMessage = async (message: Message, ws: WebSocketExtended, wss: WebSocket.Server) => {
@@ -42,6 +51,10 @@ const handleMessage = async (message: Message, ws: WebSocketExtended, wss: WebSo
                     player1: pendingUser.userEmail,
                     player2: userEmail,
                     turn: pendingUser.userEmail,
+                    timers: {
+                        player1: 5 * 60 * 1000,
+                        player2: 5 * 60 * 1000,
+                    },
                 });
                 const savedGame = await newGame.save();
 
@@ -51,10 +64,20 @@ const handleMessage = async (message: Message, ws: WebSocketExtended, wss: WebSo
                     turn: pendingUser.userEmail!,
                     player1: pendingUser.userEmail!,
                     player2: userEmail,
+                    timers: {
+                        player1: 5 * 60 * 1000, // 5 minutes in milliseconds
+                        player2: 5 * 60 * 1000,
+                    },
+                    timerIntervals: {
+                        player1: null,
+                        player2: null,
+                    },
                 };
 
                 pendingUser.gameId = gameId;
                 ws.gameId = gameId;
+
+                startTimer(gameId, 'player1', wss);
 
                 pendingUser.send(
                     JSON.stringify({ type: 'game_started', gameId, board: chess.fen(), turn: pendingUser.userEmail, color: 'white' })
@@ -92,41 +115,24 @@ const handleMessage = async (message: Message, ws: WebSocketExtended, wss: WebSo
             try {
                 const moveResult = game.move({ from, to });
                 const updatedBoard = game.fen();
-                let gameStatus = null;
-                let winner = null;
-                let threatened = null;
-
-
-                if (game.isCheckmate()) {
-                    gameStatus = 'checkmate';
-                    winner = game.turn() === 'w' ? gameData.player2 : gameData.player1;
-                } else if (game.isDraw()) {
-                    gameStatus = 'draw';
-                } else if (game.isCheck()) {
-                    gameStatus = 'check';
-                    threatened = game.turn() === 'w' ? gameData.player1 : gameData.player2;
-                }
 
                 // Update the turn in the game state
                 gameData.turn = game.turn() === 'w' ? gameData.player1 : gameData.player2;
 
                 // Update the board state in the database
-                if (gameStatus === 'draw') {
-                    await Game.updateOne(
-                        { _id: gameId },
-                        { board: updatedBoard, turn: gameData.turn, result: 'draw' }
-                    );
-                } else if (gameStatus === 'checkmate') {
-                    await Game.updateOne(
-                        { _id: gameId },
-                        { board: updatedBoard, turn: gameData.turn, result: winner === gameData.player1 ? 'player1' : 'player2' }
-                    );
-                } else {
-                    await Game.updateOne(
-                        { _id: gameId },
-                        { board: updatedBoard, turn: gameData.turn, }
-                    );
-                }
+                await Game.updateOne(
+                    { _id: gameId },
+                    {
+                        board: updatedBoard, turn: gameData.turn,
+                        timers: {
+                            player1: gameData.timers.player1,
+                            player2: gameData.timers.player2,
+                        }
+                    }
+                );
+
+                stopTimer(gameId, currentTurn === gameData.player1 ? 'player1' : 'player2');
+                startTimer(gameId, gameData.turn === gameData.player1 ? 'player1' : 'player2', wss);
 
 
                 // Emit updated board state to both players
@@ -138,9 +144,7 @@ const handleMessage = async (message: Message, ws: WebSocketExtended, wss: WebSo
                                 type: 'board_update',
                                 board: updatedBoard,
                                 turn: gameData.turn,
-                                gameStatus,
-                                winner,
-                                threatened,
+                                timers: gameData.timers,
                             })
                         );
                     }
@@ -175,6 +179,14 @@ const handleMessage = async (message: Message, ws: WebSocketExtended, wss: WebSo
                         turn: dbGame.turn,
                         player1: dbGame.player1,
                         player2: dbGame.player2,
+                        timers: {
+                            player1: dbGame.timers ? dbGame.timers.player1 : 0,
+                            player2: dbGame.timers ? dbGame.timers.player2 : 0,
+                        },
+                        timerIntervals: {
+                            player1: null,
+                            player2: null,
+                        },
                     };
 
                     // Store in in-memory object for future use
@@ -203,6 +215,7 @@ const handleMessage = async (message: Message, ws: WebSocketExtended, wss: WebSo
                     board: preGameData.game.fen(),
                     turn: preGameData.turn,
                     color: preGameData.player1 === disconnectedUserEmail ? 'white' : 'black',
+                    timers: preGameData.timers,
                 })
             );
 
@@ -262,6 +275,59 @@ const handleMessage = async (message: Message, ws: WebSocketExtended, wss: WebSo
         default:
             console.log('Unknown message type', message.type);
     }
+};
+
+// Function to start a player's timer
+const startTimer = (gameId: string, player: 'player1' | 'player2', wss: WebSocket.Server) => {
+    const gameData = games[gameId];
+    if (!gameData) return;
+
+    const playerEmail = player === 'player1' ? gameData.player1 : gameData.player2;
+    const interval = setInterval(() => {
+        gameData.timers[player] -= 1000;
+        if (gameData.timers[player] <= 0) {
+            clearInterval(interval);
+            // Declare the opponent as the winner
+            const winner = player === 'player1' ? gameData.player2 : gameData.player1;
+
+            wss.clients.forEach((client) => {
+                const extendedClient = client as WebSocketExtended;
+                if (extendedClient.gameId === gameId) {
+                    extendedClient.send(
+                        JSON.stringify({
+                            type: 'game_over',
+                            winner,
+                        })
+                    );
+                }
+            });
+        } else {
+            // Send timer update to the clients
+            wss.clients.forEach((client) => {
+                const extendedClient = client as WebSocketExtended;
+                if (extendedClient.gameId === gameId) {
+                    extendedClient.send(
+                        JSON.stringify({
+                            type: 'timer_update',
+                            timers: gameData.timers,
+                        })
+                    );
+                }
+            });
+        }
+    }, 1000);
+
+    // Store the interval ID so we can clear it later
+    gameData.timerIntervals[player] = interval;
+};
+
+// Function to stop a player's timer
+const stopTimer = (gameId: string, player: 'player1' | 'player2') => {
+    const gameData = games[gameId];
+    if (!gameData || !gameData.timerIntervals[player]) return;
+
+    clearInterval(gameData.timerIntervals[player]!);
+    gameData.timerIntervals[player] = null;
 };
 
 // WebSocket setup function

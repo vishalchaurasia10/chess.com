@@ -35,6 +35,10 @@ export interface GameContextType {
     threatened: String;
     winner: String;
     checkSquare: Square | null;
+    timers: {
+        player1: number;
+        player2: number;
+    };
 }
 
 export const GameContext = createContext<GameContextType | undefined>(undefined);
