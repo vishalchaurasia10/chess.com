@@ -22,7 +22,7 @@ const SocketState: React.FC<SocketStateProps> = ({ children }) => {
             toast.error('You must be logged in to play chess');
             return;
         }
-        const ws = new WebSocket('ws://localhost:5000');
+        const ws = new WebSocket(process.env.NEXT_PUBLIC_SOCKET_URL || '');
         setSocket(ws);
 
         ws.onopen = () => {

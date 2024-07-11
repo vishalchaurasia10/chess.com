@@ -295,7 +295,7 @@ const GameState: React.FC<GameStateProps> = ({ children }) => {
             console.log('Disconnected from WebSocket server');
             if (gameId.length < 0 || gameover || winner.length > 0) return;
             setTimeout(() => {
-                const newSocket = new WebSocket('ws://localhost:5000');
+                const newSocket = new WebSocket(process.env.NEXT_PUBLIC_SOCKET_URL || '');
                 setSocket(newSocket);
                 newSocket.onopen = () => {
                     newSocket.send(
