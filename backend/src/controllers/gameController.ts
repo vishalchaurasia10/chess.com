@@ -25,14 +25,12 @@ export const reconnectPlayer = async (req: Request, res: Response) => {
 export const getGames = async (req: Request, res: Response) => {
     try {
         const { email } = req.body;
-        console.log('Received email:', email); // Debugging log
 
         if (!email) {
             return res.status(400).json({ error: 'Email is required' });
         }
 
         const games = await Game.find({ $or: [{ player1: email }, { player2: email }] });
-        console.log('Fetched games:', games); // Debugging log
 
         if (games.length === 0) {
             return res.status(404).json({ error: 'No games found for this email' });

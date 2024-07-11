@@ -98,7 +98,6 @@ const handleMessage = async (message: Message, ws: WebSocketExtended, wss: WebSo
 
         case 'move':
             const { from, to, gameId } = message.payload;
-            console.log('gameid:', gameId)
             const gameData = games[gameId];
 
             if (!gameData) {
@@ -191,7 +190,6 @@ const handleMessage = async (message: Message, ws: WebSocketExtended, wss: WebSo
                     }
                 });
             } catch (error) {
-                console.log('Invalid move:', message.payload);
                 ws.send(JSON.stringify({ type: 'error', message: 'Invalid move' }));
             }
             break;
@@ -199,8 +197,6 @@ const handleMessage = async (message: Message, ws: WebSocketExtended, wss: WebSo
         case 'reconnect':
             const prevGameId = message.payload.gameId;
             const disconnectedUserEmail = message.payload.userEmail;
-            console.log('Reconnect:', prevGameId, disconnectedUserEmail);
-            console.log('games:', games);
 
             // Check if game exists in the in-memory object
             let preGameData = games[prevGameId];
@@ -268,7 +264,6 @@ const handleMessage = async (message: Message, ws: WebSocketExtended, wss: WebSo
         case 'promotion':
             const { from: fromP, to: toP, promotion, gameId: promotionGameId } = message.payload;
             const promotionGameData = games[promotionGameId];
-            console.log('promotionGameData:', promotionGameData);
 
             if (!promotionGameData) {
                 console.log('Game not found');

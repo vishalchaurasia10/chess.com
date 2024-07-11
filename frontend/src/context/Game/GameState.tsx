@@ -177,7 +177,6 @@ const GameState: React.FC<GameStateProps> = ({ children }) => {
     function onPromotionPieceSelect(piece?: PromotionPieceOption, promoteFromSquare?: Square, promoteToSquare?: Square): boolean {
         if (moveFrom)
             promoteFromSquare = promoteFromSquare || moveFrom;
-        console.log('In promotion piece select', piece, promoteFromSquare, promoteToSquare);
         if (piece && promoteFromSquare && promoteToSquare && socket) {
             const gameCopy = new Chess(game.fen());
             const move = gameCopy.move({
@@ -185,7 +184,6 @@ const GameState: React.FC<GameStateProps> = ({ children }) => {
                 to: promoteToSquare,
                 promotion: piece.toLowerCase() ?? "q",
             });
-            console.log('Move', move);
             if (move) {
                 setGame(gameCopy);
                 socket.send(JSON.stringify({
@@ -229,7 +227,6 @@ const GameState: React.FC<GameStateProps> = ({ children }) => {
         }
 
         function getKingSquare(board: string, color: string): Square | null {
-            console.log('In get king square', board, color);
             const game = new Chess(board);
             const pieces = game.board();
             for (let row of pieces) {
@@ -245,11 +242,9 @@ const GameState: React.FC<GameStateProps> = ({ children }) => {
 
         const handleSocketMessage = (message: { data: string; }) => {
             const parsedData = JSON.parse(message.data);
-            console.log('In gamestate', parsedData);
             const { type } = parsedData;
             if (type === 'waiting_for_opponent') {
                 toast.loading('Waiting for opponent to join');
-                console.log('Waiting for opponent to join');
             } else if (type === 'game_started') {
                 toast.dismiss();
                 setOrientation(parsedData.color);
@@ -331,12 +326,6 @@ const GameState: React.FC<GameStateProps> = ({ children }) => {
         if (id != 'game')
             setGameId(id);
     }, [socket]);
-
-    useEffect(() => {
-        console.log('gameover',gameover);
-        console.log('winner',winner);
-        console.log('draw',draw);
-    }, [gameover, winner, draw]);
 
     return (
         <GameContext.Provider

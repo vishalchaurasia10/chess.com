@@ -37,7 +37,6 @@ const AuthState: React.FC<AuthStateProps> = ({ children }) => {
                 toast.error(errorData.error || 'Signup failed. Please try again. 🤔')
             }
         } catch (error) {
-            console.log(error);
             toast.dismiss();
             toast.error('Signup failed. Please try again. 🤔');
         }
@@ -69,7 +68,6 @@ const AuthState: React.FC<AuthStateProps> = ({ children }) => {
                 name: data.name
             });
         } catch (error) {
-            console.log(error);
             toast.error('Signin failed. Please try again. 🤔');
         }
     }
@@ -95,7 +93,6 @@ const AuthState: React.FC<AuthStateProps> = ({ children }) => {
             }
         } catch (error) {
             router.push('/sign-in');
-            console.log(error);
         }
     }
 
