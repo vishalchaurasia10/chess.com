@@ -39,6 +39,7 @@ export interface GameContextType {
         player1: number;
         player2: number;
     };
+    draw: boolean;
 }
 
 export const GameContext = createContext<GameContextType | undefined>(undefined);

@@ -19,7 +19,6 @@ const gameSchema = new mongoose.Schema({
     },
     result: {
         type: String,
-        enum: ['player1', 'player2', 'draw', 'ongoing'],
         default: 'ongoing'
     },
     timers: {

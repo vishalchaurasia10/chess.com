@@ -6,6 +6,7 @@ import { SocketContext } from '@/context/Socket/socketContext';
 import { GameContext } from '@/context/Game/gameContext';
 import { toast, Toaster } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
+import { BsExclamationCircleFill } from 'react-icons/bs';
 
 
 
@@ -22,7 +23,7 @@ const ChessBoard: React.FC = () => {
     if (!gameContext) {
         throw new Error('GameContext is not defined');
     }
-    const { timers, checkSquare, gameStatus, threatened, winner, turn, orientation, gameRecover, gameId, game, onSquareClick, optionSquares, rightClickedSquares, onPromotionPieceSelect, showPromotionDialog, moveTo, onSquareRightClick } = gameContext;
+    const { draw, timers, checkSquare, gameStatus, threatened, winner, turn, orientation, gameRecover, gameId, game, onSquareClick, optionSquares, rightClickedSquares, onPromotionPieceSelect, showPromotionDialog, moveTo, onSquareRightClick } = gameContext;
     if (!socketContext) {
         throw new Error('SocketContext is not defined');
     }
@@ -56,6 +57,20 @@ const ChessBoard: React.FC = () => {
         recoverGame();
     }, [gameId, user]);
 
+    useEffect(() => {
+        const showModal = () => {
+            const modal = document.getElementById('my_modal_2') as HTMLDialogElement;
+            if (modal) {
+                modal.showModal();
+            }
+        };
+
+        if (winner || draw) {
+            showModal();
+        }
+    }, [winner, draw]);
+
+
 
     return (
         <>
@@ -76,8 +91,8 @@ const ChessBoard: React.FC = () => {
                     boardOrientation={orientation}
                 />
             </div>
-            <div className='fixed w-full top-10 text-center text-white font-poppins font-bold'>
-                <div className='lg:text-right lg:pr-2 text-4xl lg:text-3xl'>
+            <div className='fixed w-full top-10 lg:text-right lg:pr-2 text-center text-white font-poppins font-bold'>
+                <div className='text-4xl lg:text-3xl'>
                     {
                         turn == user?.email ? 'Your Turn' : 'Opponents Turn'
                     }
@@ -96,6 +111,25 @@ const ChessBoard: React.FC = () => {
                     }
                 </div>
             </div>
+            {(winner && winner.length > 0) || draw ? (
+                <dialog id="my_modal_2" className="modal">
+                    <div className="modal-box font-poppins">
+                        <div className='flex items-center space-x-2'>
+                            <BsExclamationCircleFill size={22} className="text-orange-400" />
+                            <h3 className="font-bold text-2xl">
+                                Game Over
+                            </h3>
+                        </div>
+                        <p className="py-4">
+                            {draw ? 'Match Draw' : <>Player with email <strong>{winner}</strong> is the winner</>}
+                        </p>
+
+                    </div>
+                    <form method="dialog" className="modal-backdrop">
+                        <button>close</button>
+                    </form>
+                </dialog>
+            ) : null}
         </>
     );
 };

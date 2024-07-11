@@ -31,6 +31,8 @@ const GameState: React.FC<GameStateProps> = ({ children }) => {
     const [winner, setWinner] = useState<string>(''); // ['player1', 'player2', 'draw'
     const [checkSquare, setCheckSquare] = useState<Square | null>(null);
     const [timers, setTimers] = useState({ player1: 300000, player2: 300000 });
+    const [gameover, setGameover] = useState(false);
+    const [draw, setDraw] = useState(false);
 
     const authContext = useContext(AuthContext);
     const socketContext = useContext(SocketContext);
@@ -256,9 +258,16 @@ const GameState: React.FC<GameStateProps> = ({ children }) => {
                 setGame(new Chess(parsedData.board));
                 router.push(`/game/${parsedData.gameId}`);
             } else if (type === 'board_update') {
-                const { board, turn, color } = parsedData;
+                const { board, turn, color, result } = parsedData;
                 if (!gameRecover) {
                     setGameRecover(true);
+                }
+                if (result === 'draw') {
+                    setDraw(true);
+                    socket.close();
+                } else if (result && result !== 'ongoing') {
+                    setWinner(result);
+                    socket.close();
                 }
                 setTimers(parsedData.timers);
                 game.load(board);
@@ -273,7 +282,15 @@ const GameState: React.FC<GameStateProps> = ({ children }) => {
                 setGame(newGame);
             } else if (type === 'timer_update') {
                 setTimers(parsedData.timers);
-            } else {
+            } else if (type === 'game_over') {
+                setGameover(true);
+                if (parsedData.draw) {
+                    setDraw(true);
+                } else {
+                    setWinner(parsedData.winner);
+                }
+                socket.close();
+            } else if (type === 'error') {
                 toast.error(parsedData.message);
             }
         };
@@ -281,7 +298,7 @@ const GameState: React.FC<GameStateProps> = ({ children }) => {
         const handleSocketClose = () => {
             setSocket(null);
             console.log('Disconnected from WebSocket server');
-            if (gameId.length < 0) return;
+            if (gameId.length < 0 || gameover || winner.length > 0) return;
             setTimeout(() => {
                 const newSocket = new WebSocket('ws://localhost:5000');
                 setSocket(newSocket);
@@ -310,9 +327,16 @@ const GameState: React.FC<GameStateProps> = ({ children }) => {
     }, [socket, gameId]);
 
     useEffect(() => {
-        const gameId = pathname.split('/').pop() || '';
-        setGameId(gameId);
+        const id = pathname.split('/').pop() || '';
+        if (id != 'game')
+            setGameId(id);
     }, [socket]);
+
+    useEffect(() => {
+        console.log('gameover',gameover);
+        console.log('winner',winner);
+        console.log('draw',draw);
+    }, [gameover, winner, draw]);
 
     return (
         <GameContext.Provider
@@ -343,19 +367,11 @@ const GameState: React.FC<GameStateProps> = ({ children }) => {
                 winner,
                 checkSquare,
                 timers,
+                draw
             }}>
             <Toaster />
             {children}
         </GameContext.Provider>
-    );
-}
-
-const CustomToast = ({ message, t }: { message: string, t: any }) => {
-    return (
-        <span>
-            {message}
-            <button onClick={() => toast.dismiss(t.id)}>Dismiss</button>
-        </span>
     );
 }
 

@@ -33,6 +33,7 @@ interface GameData {
         player1: NodeJS.Timeout | null;
         player2: NodeJS.Timeout | null;
     };
+    result?: string;
 }
 
 const games: { [key: string]: GameData } = {};
@@ -52,8 +53,8 @@ const handleMessage = async (message: Message, ws: WebSocketExtended, wss: WebSo
                     player2: userEmail,
                     turn: pendingUser.userEmail,
                     timers: {
-                        player1: 5 * 60 * 1000,
-                        player2: 5 * 60 * 1000,
+                        player1: 10 * 60 * 1000,
+                        player2: 10 * 60 * 1000,
                     },
                 });
                 const savedGame = await newGame.save();
@@ -65,13 +66,14 @@ const handleMessage = async (message: Message, ws: WebSocketExtended, wss: WebSo
                     player1: pendingUser.userEmail!,
                     player2: userEmail,
                     timers: {
-                        player1: 5 * 60 * 1000, // 5 minutes in milliseconds
-                        player2: 5 * 60 * 1000,
+                        player1: 10 * 60 * 1000, // 5 minutes in milliseconds
+                        player2: 10 * 60 * 1000,
                     },
                     timerIntervals: {
                         player1: null,
                         player2: null,
                     },
+                    result: 'ongoing',
                 };
 
                 pendingUser.gameId = gameId;
@@ -113,23 +115,62 @@ const handleMessage = async (message: Message, ws: WebSocketExtended, wss: WebSo
             }
 
             try {
-                const moveResult = game.move({ from, to });
+                game.move({ from, to });
                 const updatedBoard = game.fen();
 
                 // Update the turn in the game state
                 gameData.turn = game.turn() === 'w' ? gameData.player1 : gameData.player2;
 
-                // Update the board state in the database
-                await Game.updateOne(
-                    { _id: gameId },
-                    {
-                        board: updatedBoard, turn: gameData.turn,
-                        timers: {
-                            player1: gameData.timers.player1,
-                            player2: gameData.timers.player2,
+                if (game.isCheckmate()) {
+                    const winner = gameData.turn === gameData.player1 ? gameData.player2 : gameData.player1;
+                    gameData.result = winner;
+                    await Game.updateOne(
+                        { _id: gameId },
+                        { board: updatedBoard, turn: gameData.turn, result: winner }
+                    );
+                    wss.clients.forEach((client) => {
+                        const extendedClient = client as WebSocketExtended;
+                        if (extendedClient.gameId === gameId) {
+                            extendedClient.send(
+                                JSON.stringify({
+                                    type: 'game_over',
+                                    winner,
+                                    draw: false,
+                                })
+                            );
                         }
-                    }
-                );
+                    });
+                    delete games[gameId];
+                } else if (game.isDraw()) {
+                    gameData.result = 'draw';
+                    await Game.updateOne(
+                        { _id: gameId },
+                        { board: updatedBoard, turn: gameData.turn, result: 'draw' }
+                    );
+                    wss.clients.forEach((client) => {
+                        const extendedClient = client as WebSocketExtended;
+                        if (extendedClient.gameId === gameId) {
+                            extendedClient.send(
+                                JSON.stringify({
+                                    type: 'game_over',
+                                    draw: true,
+                                })
+                            );
+                        }
+                    });
+                    delete games[gameId];
+                } else {
+                    await Game.updateOne(
+                        { _id: gameId },
+                        {
+                            board: updatedBoard, turn: gameData.turn,
+                            timers: {
+                                player1: gameData.timers.player1,
+                                player2: gameData.timers.player2,
+                            }
+                        }
+                    );
+                }
 
                 stopTimer(gameId, currentTurn === gameData.player1 ? 'player1' : 'player2');
                 startTimer(gameId, gameData.turn === gameData.player1 ? 'player1' : 'player2', wss);
@@ -187,6 +228,7 @@ const handleMessage = async (message: Message, ws: WebSocketExtended, wss: WebSo
                             player1: null,
                             player2: null,
                         },
+                        result: dbGame.result,
                     };
 
                     // Store in in-memory object for future use
@@ -216,6 +258,7 @@ const handleMessage = async (message: Message, ws: WebSocketExtended, wss: WebSo
                     turn: preGameData.turn,
                     color: preGameData.player1 === disconnectedUserEmail ? 'white' : 'black',
                     timers: preGameData.timers,
+                    result: preGameData.result,
                 })
             );
 
@@ -283,12 +326,24 @@ const startTimer = (gameId: string, player: 'player1' | 'player2', wss: WebSocke
     if (!gameData) return;
 
     const playerEmail = player === 'player1' ? gameData.player1 : gameData.player2;
-    const interval = setInterval(() => {
+    const interval = setInterval(async () => {
         gameData.timers[player] -= 1000;
         if (gameData.timers[player] <= 0) {
             clearInterval(interval);
             // Declare the opponent as the winner
             const winner = player === 'player1' ? gameData.player2 : gameData.player1;
+            gameData.result = winner;
+
+            await Game.updateOne(
+                { _id: gameId },
+                {
+                    result: winner,
+                    timers: {
+                        player1: gameData.timers.player1,
+                        player2: gameData.timers.player2,
+                    }
+                }
+            );
 
             wss.clients.forEach((client) => {
                 const extendedClient = client as WebSocketExtended;
@@ -297,10 +352,13 @@ const startTimer = (gameId: string, player: 'player1' | 'player2', wss: WebSocke
                         JSON.stringify({
                             type: 'game_over',
                             winner,
+                            draw: false,
                         })
                     );
                 }
             });
+
+            delete games[gameId];
         } else {
             // Send timer update to the clients
             wss.clients.forEach((client) => {
