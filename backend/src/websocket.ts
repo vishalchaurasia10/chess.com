@@ -60,7 +60,7 @@ const handleMessage = async (message: Message, ws: WebSocketExtended, wss: WebSo
                     JSON.stringify({ type: 'game_started', gameId, board: chess.fen(), turn: pendingUser.userEmail, color: 'white' })
                 );
                 ws.send(
-                    JSON.stringify({ type: 'game_started', gameId, board: chess.fen(), turn: pendingUser.userEmail, color: 'black'})
+                    JSON.stringify({ type: 'game_started', gameId, board: chess.fen(), turn: pendingUser.userEmail, color: 'black' })
                 );
 
                 pendingUser = null;
@@ -92,14 +92,42 @@ const handleMessage = async (message: Message, ws: WebSocketExtended, wss: WebSo
             try {
                 const moveResult = game.move({ from, to });
                 const updatedBoard = game.fen();
+                let gameStatus = null;
+                let winner = null;
+                let threatened = null;
+
+
+                if (game.isCheckmate()) {
+                    gameStatus = 'checkmate';
+                    winner = game.turn() === 'w' ? gameData.player2 : gameData.player1;
+                } else if (game.isDraw()) {
+                    gameStatus = 'draw';
+                } else if (game.isCheck()) {
+                    gameStatus = 'check';
+                    threatened = game.turn() === 'w' ? gameData.player1 : gameData.player2;
+                }
+
                 // Update the turn in the game state
                 gameData.turn = game.turn() === 'w' ? gameData.player1 : gameData.player2;
 
                 // Update the board state in the database
-                await Game.updateOne(
-                    { _id: gameId },
-                    { board: updatedBoard, turn: gameData.turn }
-                );
+                if (gameStatus === 'draw') {
+                    await Game.updateOne(
+                        { _id: gameId },
+                        { board: updatedBoard, turn: gameData.turn, result: 'draw' }
+                    );
+                } else if (gameStatus === 'checkmate') {
+                    await Game.updateOne(
+                        { _id: gameId },
+                        { board: updatedBoard, turn: gameData.turn, result: winner === gameData.player1 ? 'player1' : 'player2' }
+                    );
+                } else {
+                    await Game.updateOne(
+                        { _id: gameId },
+                        { board: updatedBoard, turn: gameData.turn, }
+                    );
+                }
+
 
                 // Emit updated board state to both players
                 wss.clients.forEach((client) => {
@@ -110,6 +138,9 @@ const handleMessage = async (message: Message, ws: WebSocketExtended, wss: WebSo
                                 type: 'board_update',
                                 board: updatedBoard,
                                 turn: gameData.turn,
+                                gameStatus,
+                                winner,
+                                threatened,
                             })
                         );
                     }

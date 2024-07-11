@@ -22,7 +22,7 @@ const ChessBoard: React.FC = () => {
     if (!gameContext) {
         throw new Error('GameContext is not defined');
     }
-    const { turn, orientation, gameRecover, gameId, game, onSquareClick, optionSquares, rightClickedSquares, onPromotionPieceSelect, showPromotionDialog, moveTo, onSquareRightClick } = gameContext;
+    const { checkSquare, gameStatus, threatened, winner, turn, orientation, gameRecover, gameId, game, onSquareClick, optionSquares, rightClickedSquares, onPromotionPieceSelect, showPromotionDialog, moveTo, onSquareRightClick } = gameContext;
     if (!socketContext) {
         throw new Error('SocketContext is not defined');
     }
@@ -66,14 +66,12 @@ const ChessBoard: React.FC = () => {
                     key={gameRecover === true ? 'recover' : 'new'}
                     position={game.fen()}
                     arePiecesDraggable={false}
-                    // onPromotionPieceSelect={onPromotionPieceSelect}
-                    // promotionToSquare={moveTo}
-                    // showPromotionDialog={showPromotionDialog}
                     onSquareClick={onSquareClick}
                     onSquareRightClick={onSquareRightClick}
                     customSquareStyles={{
                         ...optionSquares,
                         ...rightClickedSquares,
+                        ...(checkSquare ? { [checkSquare]: { background: 'rgba(255, 0, 0, 0.5)' } } : {}),
                     }}
                     boardOrientation={orientation}
                 />

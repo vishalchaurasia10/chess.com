@@ -10,7 +10,6 @@ import { Chess, Move, Square } from "chess.js";
 import { toast, Toaster } from "react-hot-toast";
 import { usePathname, useRouter } from "next/navigation";
 import { BoardOrientation, PromotionPieceOption } from "react-chessboard/dist/chessboard/types";
-import { parse } from "path";
 
 interface GameStateProps {
     children: ReactNode;
@@ -26,7 +25,11 @@ const GameState: React.FC<GameStateProps> = ({ children }) => {
     const [rightClickedSquares, setRightClickedSquares] = useState<SquareStyles>({});
     const [optionSquares, setOptionSquares] = useState<SquareStyles>({});
     const [gameRecover, setGameRecover] = useState(false);
-    const [orientation, setOrientation] = useState<BoardOrientation>('white'); // ['white', 'black'
+    const [orientation, setOrientation] = useState<BoardOrientation>('white'); // ['white', 'black']
+    const [threatened, setThreatened] = useState<string>('');
+    const [gameStatus, setGameStatus] = useState<string>(''); // ['checkmate', 'stalemate', 'draw', 'ongoing']
+    const [winner, setWinner] = useState<string>(''); // ['player1', 'player2', 'draw'
+    const [checkSquare, setCheckSquare] = useState<Square | null>(null);
 
     const authContext = useContext(AuthContext);
     const socketContext = useContext(SocketContext);
@@ -161,6 +164,9 @@ const GameState: React.FC<GameStateProps> = ({ children }) => {
             setMoveFrom(null);
             setMoveTo(null);
             setOptionSquares({});
+            setGameStatus('');
+            setThreatened('');
+            setWinner('');
             return;
         }
     }
@@ -219,6 +225,21 @@ const GameState: React.FC<GameStateProps> = ({ children }) => {
             return;
         }
 
+        function getKingSquare(board: string, color: string): Square | null {
+            console.log('In get king square', board, color);
+            const game = new Chess(board);
+            const pieces = game.board();
+            for (let row of pieces) {
+                for (let piece of row) {
+                    if (piece && piece.type === 'k' && piece.color === color) {
+                        return piece.square as Square;
+                    }
+                }
+            }
+            return null;
+        }
+
+
         const handleSocketMessage = (message: { data: string; }) => {
             const parsedData = JSON.parse(message.data);
             console.log('In gamestate', parsedData);
@@ -234,9 +255,30 @@ const GameState: React.FC<GameStateProps> = ({ children }) => {
                 setGame(new Chess(parsedData.board));
                 router.push(`/game/${parsedData.gameId}`);
             } else if (type === 'board_update') {
-                const { board, turn, color } = parsedData;
+                const { board, turn, color, gameStatus, winner, threatened } = parsedData;
                 if (!gameRecover) {
                     setGameRecover(true);
+                }
+                if (gameStatus) {
+                    if (gameStatus === 'draw') {
+                        toast((t) => <CustomToast message={`Game is draw.`} t={t} />)
+                    }
+                    setGameStatus(gameStatus);
+                }
+                if (winner) {
+                    toast((t) => <CustomToast message={`Player ${winner} is winner.`} t={t} />)
+                    setWinner(winner);
+                }
+                if (threatened) {
+                    setThreatened(threatened);
+                }
+                if (threatened === user?.email) {
+                    const kingSquare = getKingSquare(parsedData.board, orientation === 'white' ? 'w' : 'b');
+                    console.log('King square', kingSquare);
+                    setCheckSquare(kingSquare);
+                } else {
+                    console.log('Setting check square to null');
+                    setCheckSquare(null);
                 }
                 game.load(board);
                 if (color)
@@ -313,10 +355,23 @@ const GameState: React.FC<GameStateProps> = ({ children }) => {
                 onSquareRightClick,
                 gameRecover,
                 orientation,
+                gameStatus,
+                threatened,
+                winner,
+                checkSquare,
             }}>
             <Toaster />
             {children}
         </GameContext.Provider>
+    );
+}
+
+const CustomToast = ({ message, t }: { message: string, t: any }) => {
+    return (
+        <span>
+            {message}
+            <button onClick={() => toast.dismiss(t.id)}>Dismiss</button>
+        </span>
     );
 }
 

@@ -31,6 +31,10 @@ export interface GameContextType {
     onSquareRightClick: (square: Square) => void;
     gameRecover: boolean;
     orientation: BoardOrientation;
+    gameStatus: string;
+    threatened: String;
+    winner: String;
+    checkSquare: Square | null;
 }
 
 export const GameContext = createContext<GameContextType | undefined>(undefined);
