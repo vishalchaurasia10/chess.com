@@ -14,7 +14,7 @@ const SideBar = () => {
     const { user, signout } = context;
     return (
         <div className="fixed z-50 bottom-0 lg:top-0 lg:left-0 w-full lg:h-screen lg:w-16 flex flex-row lg:flex-col bg-[rgba(255,255,255,0.2)] shadow-lg backdrop-blur-2xl">
-            <SideBarIcon icon={<SiChessdotcom size="28" />} text='Chess.com' toUrl='/' />
+            <SideBarIcon icon={<SiChessdotcom size="28" />} text='Home' toUrl='/' />
             <Divider />
             <SideBarIcon icon={<BsPlus size="32" />} text='Play new game ♟️' toUrl='/game' />
             <SideBarIcon icon={<BsPeopleFill size="20" />} text='Watch other games 👀' toUrl='/watch' />
