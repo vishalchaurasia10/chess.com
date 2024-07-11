@@ -1,5 +1,5 @@
 'use client'
-import React, { use, useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Chessboard } from 'react-chessboard';
 import { AuthContext } from '@/context/Auth/authContext';
 import { SocketContext } from '@/context/Socket/socketContext';
@@ -7,11 +7,11 @@ import { GameContext } from '@/context/Game/gameContext';
 import { toast, Toaster } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import { BsExclamationCircleFill } from 'react-icons/bs';
-
-
+import { themes } from '@/utils/constants';
 
 const ChessBoard: React.FC = () => {
 
+    const [selectedTheme, setSelectedTheme] = useState('fireAndIce');
     const authcontext = useContext(AuthContext);
     const socketContext = useContext(SocketContext);
     const gameContext = useContext(GameContext);
@@ -70,13 +70,14 @@ const ChessBoard: React.FC = () => {
         }
     }, [winner, draw]);
 
-
+    const handleThemeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+        setSelectedTheme(event.target.value);
+    };
 
     return (
         <>
             <div className='w-[90%] lg:w-[48%] shadow-2xl shadow-black'>
                 <Toaster />
-                {/* <button onClick={disconnectSocket}>Disconnect Socket</button> */}
                 <Chessboard
                     key={gameRecover === true ? 'recover' : 'new'}
                     position={game.fen()}
@@ -89,9 +90,22 @@ const ChessBoard: React.FC = () => {
                         ...(checkSquare ? { [checkSquare]: { background: 'rgba(255, 0, 0, 0.5)' } } : {}),
                     }}
                     boardOrientation={orientation}
+                    customBoardStyle={themes[selectedTheme].boardStyle}
+                    customDarkSquareStyle={themes[selectedTheme].darkSquareStyle}
+                    customLightSquareStyle={themes[selectedTheme].lightSquareStyle}
                 />
             </div>
             <div className='fixed w-full top-10 lg:text-right lg:pr-2 text-center text-white font-poppins font-bold'>
+                <div className="theme-selector text-black">
+                    <label htmlFor="theme-select" className="text-white">Select Theme: </label>
+                    <select id="theme-select" value={selectedTheme} onChange={handleThemeChange} className="ml-2 p-1 rounded">
+                        <option value="fireAndIce">Fire and Ice</option>
+                        <option value="inferno">Inferno</option>
+                        <option value="nightSky">Night Sky</option>
+                        <option value="mysticForest">Mystic Forest</option>
+                        <option value="sunsetGlow">Sunset Glow</option>
+                    </select>
+                </div>
                 <div className='text-4xl lg:text-3xl'>
                     {
                         turn == user?.email ? 'Your Turn' : 'Opponents Turn'
