@@ -1,6 +1,13 @@
 import React from 'react'
 import Signin from './Signin'
 
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+    title: "Sign In | Chess Game",
+    description: "Welcome to our real-time chess game",
+};
+
 const page = () => {
     return (
         <div className="signInWrapper lg:min-h-screen flex flex-col lg:flex-row items-center justify-center font-poppins">
