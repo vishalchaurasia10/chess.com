@@ -16,6 +16,17 @@ const AuthState: React.FC<AuthStateProps> = ({ children }) => {
 
     const signup = async (credentials: Credentials) => {
 
+        if (credentials.password.length < 8) {
+            toast.error('Password must be at least 8 characters long. 🤔');
+            return;
+        } else if (credentials.name.length < 3) {
+            toast.error('Name must be at least 3 characters long. 🤔');
+            return;
+        } else if (credentials.email.length < 3) {
+            toast.error('Invalid email. 🤔');
+            return;
+        }
+
         toast.loading('Signing up...');
 
         try {
@@ -43,6 +54,15 @@ const AuthState: React.FC<AuthStateProps> = ({ children }) => {
     };
 
     const signin = async (credentials: { email: string, password: string }) => {
+
+        if (credentials.password.length < 8) {
+            toast.error('Password must be at least 8 characters long. 🤔');
+            return;
+        } else if (credentials.email.length < 3) {
+            toast.error('Invalid email. 🤔');
+            return;
+        }
+
         toast.loading('Signing in...');
 
         try {
@@ -102,6 +122,14 @@ const AuthState: React.FC<AuthStateProps> = ({ children }) => {
         router.push('/sign-in');
     }
 
+    const googleAuth = () => {
+        try {
+            window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/api/auth/google`;
+        } catch (error) {
+            toast.error((error as Error).message);
+        }
+    }
+
     useEffect(() => {
         verifyAccessToken();
     }, []);
@@ -117,7 +145,8 @@ const AuthState: React.FC<AuthStateProps> = ({ children }) => {
                     setUser,
                     signup,
                     signin,
-                    signout
+                    signout,
+                    googleAuth
                 } as AuthContextType}>
                 {children}
             </AuthContext.Provider>

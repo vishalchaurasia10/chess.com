@@ -19,6 +19,7 @@ export interface AuthContextType {
     signup: (credentials: Credentials) => void;
     signin: (credentials: { email: string, password: string }) => void; // Add signin function
     signout: () => void;
+    googleAuth: () => void;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
