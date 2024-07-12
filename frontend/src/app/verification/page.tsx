@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import React from 'react'
+import React, { Suspense } from 'react'
 import Verification from './Verification';
 
 export const metadata: Metadata = {
@@ -12,7 +12,9 @@ export const metadata: Metadata = {
 const page = () => {
     return (
         <>
-            <Verification />
+            <Suspense fallback={<div>Loading...</div>} >
+                <Verification />
+            </Suspense>
         </>
     )
 }
